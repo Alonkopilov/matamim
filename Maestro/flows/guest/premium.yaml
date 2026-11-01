@@ -1,0 +1,128 @@
+# The premium screen for a user who isn't logged in. Plans come from
+# RevenueCat's Test Store, the legal pages from matamim.org.
+#
+# Checks:
+#   5. The plans load, with the yearly "Best value" plan selected
+#   6. Purchase and restore need an account: both show "Login required"
+#      and nothing else happens. Its "Log in" button opens the login form.
+#   7. Terms of Use and Privacy Policy open the real pages
+appId: com.matamim.app.e2e
+name: Guest - premium screen
+tags:
+  - guest
+---
+- launchApp:
+    clearState: true
+- extendedWaitUntil:
+    visible: "Your cookbook is empty, but the kitchen is waiting 🍗"
+    timeout: 20000
+- tapOn: "Premium"
+- assertVisible:
+    text: "Premium"
+    selected: true
+
+# 5. Plans load from the Test Store, yearly is selected and badged
+- extendedWaitUntil:
+    visible:
+      id: "payment-option-annual"
+    timeout: 20000
+- assertNotVisible: "Payment options can't be loaded right now"
+- assertVisible:
+    id: "payment-option-annual"
+    selected: true
+- assertVisible:
+    id: "payment-option-monthly"
+    selected: false
+- assertVisible:
+    id: "payment-option-lifetime"
+    selected: false
+# The badge is on the yearly plan, and only there
+- assertVisible:
+    text: "Best value"
+    childOf:
+      id: "payment-option-annual-badge"
+- assertNotVisible:
+    id: "payment-option-monthly-badge"
+- assertNotVisible:
+    id: "payment-option-lifetime-badge"
+# The renewal notice follows the selected plan
+- scrollUntilVisible:
+    element: "Your subscription renews automatically at .* per year unless you cancel it\\..*"
+
+# 6a. Purchase as a guest
+- scrollUntilVisible:
+    element: "Purchase"
+- tapOn: "Purchase"
+- assertVisible: "Login required"
+- assertVisible: "Please log in to your account to buy Premium."
+- tapOn: "Cancel"
+- assertNotVisible: "Login required"
+- assertVisible:
+    text: "Premium"
+    selected: true
+- assertVisible: "Purchase"
+
+# 6b. Restore as a guest
+- scrollUntilVisible:
+    element: "Restore purchase"
+- tapOn: "Restore purchase"
+- assertVisible: "Login required"
+- tapOn: "Cancel"
+- assertNotVisible: "Login required"
+- assertVisible:
+    text: "Premium"
+    selected: true
+
+# 7. Legal pages open in the browser, on matamim.org. The page titles
+#    (with " – Matamim") and headings exist only on the web pages.
+- tapOn: "Terms of Use"
+- runFlow: ../../subflows/dismiss-chrome-first-run.yaml
+- extendedWaitUntil:
+    visible: "Terms of Use – Matamim"
+    timeout: 20000
+- assertVisible:
+    id: "com.android.chrome:id/url_bar"
+    text: "matamim.org"
+- assertVisible: "Your account"
+# Back is sometimes swallowed by Chrome, the tab's close button isn't
+- tapOn:
+    id: "com.android.chrome:id/close_button"
+- assertVisible:
+    text: "Premium"
+    selected: true
+- tapOn: "Privacy Policy"
+- runFlow: ../../subflows/dismiss-chrome-first-run.yaml
+- extendedWaitUntil:
+    visible: "Privacy Policy – Matamim"
+    timeout: 20000
+- assertVisible:
+    id: "com.android.chrome:id/url_bar"
+    text: "matamim.org"
+- assertVisible: "Using the app without an account"
+# Back is sometimes swallowed by Chrome, the tab's close button isn't
+- tapOn:
+    id: "com.android.chrome:id/close_button"
+- assertVisible:
+    text: "Premium"
+    selected: true
+
+# 6. Nothing else happened after purchase and restore. Checked after the
+#    browser round trips, so a late dialog or toast would be on screen by now.
+- assertNotVisible: "Welcome to Premium!"
+- assertNotVisible: "Purchase failed"
+- assertNotVisible: "Your subscription is active"
+- assertNotVisible: "Your purchase was restored!"
+- assertNotVisible: "No previous purchase found"
+- assertNotVisible: "Couldn't restore your purchase"
+
+# 6c. "Log in" in the sheet takes the guest to the login form
+- tapOn: "Purchase"
+- assertVisible: "Login required"
+- tapOn:
+    text: "Log in"
+- assertNotVisible: "Login required"
+- assertVisible:
+    text: "Account"
+    selected: true
+- assertVisible: "Email"
+- assertVisible: "Password"

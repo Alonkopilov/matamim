@@ -1,0 +1,17 @@
+{
+  "premium": "Premium",
+  "cancel": "Cancel",
+  "anonymousChef": "Anonymous Chef",
+  "newCook": "New Cook",
+  "gotIt": "Got it",
+  "confirm": "OK",
+  "delete": "Delete",
+  "save": "Save",
+  "continue": "Continue",
+  "crash": {
+    "title": "Something went wrong",
+    "description": "The app ran into an error. Your recipes are safe on the device.",
+    "retry": "Try again"
+  },
+  "clear": "Clear"
+}

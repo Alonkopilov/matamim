@@ -1,0 +1,23 @@
+{
+  "account": "Account",
+  "team": "Team",
+  "create": "Create",
+  "recipes": "Recipes",
+  "premium": "Premium",
+  "teamLocked": "Join or create a team from the Account tab first",
+  "createMenu": {
+    "title": "What are we making?",
+    "new": {
+      "title": "New recipe",
+      "hint": "Write a recipe from scratch"
+    },
+    "link": {
+      "title": "Import from a link",
+      "hint": "Paste a link to a recipe page"
+    },
+    "photo": {
+      "title": "Import from a photo",
+      "hint": "Take or pick a photo of a recipe"
+    }
+  }
+}

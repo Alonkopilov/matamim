@@ -1,0 +1,30 @@
+# Fills the sign up form, replacing whatever is in each field. Doesn't submit.
+# The keyboard is closed after each field, it would cover the next one.
+#
+# env: NAME, EMAIL, PASSWORD, CONFIRM (the "Confirm password" field)
+appId: com.matamim.app.e2e
+---
+- runFlow:
+    file: replace-text.yaml
+    env:
+      ID: "account-fullName"
+      TEXT: ${NAME}
+- hideKeyboard
+- runFlow:
+    file: replace-text.yaml
+    env:
+      ID: "account-email"
+      TEXT: ${EMAIL}
+- hideKeyboard
+- runFlow:
+    file: replace-text.yaml
+    env:
+      ID: "account-password"
+      TEXT: ${PASSWORD}
+- hideKeyboard
+- runFlow:
+    file: replace-text.yaml
+    env:
+      ID: "account-confirmPassword"
+      TEXT: ${CONFIRM}
+- hideKeyboard

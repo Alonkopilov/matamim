@@ -1,0 +1,335 @@
+# A guest creates a recipe. It's saved on the device only, and survives a
+# relaunch.
+#
+# Checks:
+#   1. "Create my first recipe" opens the new recipe form in edit mode, with
+#      no sheet or dialog open
+#   2. Create is refused until every required field is filled, field by field
+#   3. A complete recipe is created, shown on the recipes screen with what was
+#      entered, and nothing reached the cloud (no recipe or storage requests
+#      to Supabase, no rows added to the database)
+#   4. The recipe is still there after a relaunch
+appId: com.matamim.app.e2e
+name: Guest - create a recipe
+tags:
+  - smoke
+  - guest
+---
+# Starts the network window before launch, so startup requests count too
+- runScript: ../../scripts/probe-now.js
+- evalScript: ${output.flowStart = output.since}
+# Other flows in a suite run leave recipe rows, so count what this flow adds
+- runScript:
+    file: ../../scripts/probe-count.js
+    env:
+      TABLE: "recipes"
+- evalScript: ${output.rowsAtStart = output.rowCount}
+- launchApp:
+    clearState: true
+- extendedWaitUntil:
+    visible: "Create my first recipe"
+    timeout: 20000
+
+# 1. The form opens in edit mode, nothing on top of it
+- tapOn: "Create my first recipe"
+- assertVisible:
+    id: "recipe-title"
+- assertVisible:
+    id: "create-recipe"
+- assertVisible:
+    id: "ai-import"
+- assertNotVisible: "What are we making\\?"
+- assertNotVisible: "Some recipe details are missing"
+- assertNotVisible: "Log in to try importing"
+- assertNotVisible: "Import a recipe"
+
+# 2. Every required field is checked. Create is tapped with everything empty,
+#    then after filling each field in turn: that field's message goes away,
+#    the rest stay.
+- tapOn:
+    id: "create-recipe"
+- assertVisible: "Some recipe details are missing"
+- assertVisible: "(?s).*Missing a title.*"
+- assertVisible: "(?s).*Missing prep time.*"
+- assertVisible: "(?s).*Missing number of servings.*"
+- assertVisible: "(?s).*Missing meal type.*"
+- assertVisible: "(?s).*Missing difficulty level.*"
+- assertVisible: "(?s).*Missing ingredients.*"
+- assertVisible: "(?s).*Missing steps.*"
+- tapOn: "Got it"
+- assertNotVisible: "Some recipe details are missing"
+
+# Fill: a title
+- tapOn:
+    id: "recipe-title"
+- inputText: "E2E Shakshuka"
+- tapOn:
+    id: "recipe-description"
+- inputText: "Eggs poached in a spicy tomato sauce"
+- hideKeyboard
+- assertVisible:
+    id: "recipe-title"
+    text: "E2E Shakshuka"
+- assertVisible:
+    id: "recipe-description"
+    text: "Eggs poached in a spicy tomato sauce"
+- tapOn:
+    id: "create-recipe"
+- assertVisible: "Some recipe details are missing"
+- assertVisible: "(?s).*Missing prep time.*"
+- assertVisible: "(?s).*Missing number of servings.*"
+- assertVisible: "(?s).*Missing meal type.*"
+- assertVisible: "(?s).*Missing difficulty level.*"
+- assertVisible: "(?s).*Missing ingredients.*"
+- assertVisible: "(?s).*Missing steps.*"
+- assertNotVisible: "(?s).*Missing a title.*"
+- tapOn: "Got it"
+- assertNotVisible: "Some recipe details are missing"
+
+# Fill: prep time
+- tapOn:
+    id: "property-prepTime"
+# Not the default (30) or the placeholder, so a saved value can't be mistaken
+- tapOn: "40"
+- waitForAnimationToEnd
+- tapOn: "OK"
+- assertVisible:
+    id: "property-prepTime"
+    text: "40"
+- tapOn:
+    id: "create-recipe"
+- assertVisible: "Some recipe details are missing"
+- assertVisible: "(?s).*Missing number of servings.*"
+- assertVisible: "(?s).*Missing meal type.*"
+- assertVisible: "(?s).*Missing difficulty level.*"
+- assertVisible: "(?s).*Missing ingredients.*"
+- assertVisible: "(?s).*Missing steps.*"
+- assertNotVisible: "(?s).*Missing a title.*"
+- assertNotVisible: "(?s).*Missing prep time.*"
+- tapOn: "Got it"
+- assertNotVisible: "Some recipe details are missing"
+
+# Fill: number of servings
+- tapOn:
+    id: "property-servings"
+# Not the default (4) or the placeholder (5)
+- tapOn: "6"
+- waitForAnimationToEnd
+- tapOn: "OK"
+- assertVisible:
+    id: "property-servings"
+    text: "6"
+- tapOn:
+    id: "create-recipe"
+- assertVisible: "Some recipe details are missing"
+- assertVisible: "(?s).*Missing meal type.*"
+- assertVisible: "(?s).*Missing difficulty level.*"
+- assertVisible: "(?s).*Missing ingredients.*"
+- assertVisible: "(?s).*Missing steps.*"
+- assertNotVisible: "(?s).*Missing a title.*"
+- assertNotVisible: "(?s).*Missing prep time.*"
+- assertNotVisible: "(?s).*Missing number of servings.*"
+- tapOn: "Got it"
+- assertNotVisible: "Some recipe details are missing"
+
+# Fill: meal type
+- tapOn:
+    id: "property-meal"
+# Not the placeholder (Lunch)
+- tapOn: "Dinner"
+- assertVisible:
+    id: "property-meal"
+    text: "Dinner"
+- tapOn:
+    id: "create-recipe"
+- assertVisible: "Some recipe details are missing"
+- assertVisible: "(?s).*Missing difficulty level.*"
+- assertVisible: "(?s).*Missing ingredients.*"
+- assertVisible: "(?s).*Missing steps.*"
+- assertNotVisible: "(?s).*Missing a title.*"
+- assertNotVisible: "(?s).*Missing prep time.*"
+- assertNotVisible: "(?s).*Missing number of servings.*"
+- assertNotVisible: "(?s).*Missing meal type.*"
+- tapOn: "Got it"
+- assertNotVisible: "Some recipe details are missing"
+
+# Fill: difficulty level
+- tapOn:
+    id: "property-difficulty"
+# Not the placeholder (Easy)
+- tapOn: "Medium"
+- assertVisible:
+    id: "property-difficulty"
+    text: "Medium"
+- tapOn:
+    id: "create-recipe"
+- assertVisible: "Some recipe details are missing"
+- assertVisible: "(?s).*Missing ingredients.*"
+- assertVisible: "(?s).*Missing steps.*"
+- assertNotVisible: "(?s).*Missing a title.*"
+- assertNotVisible: "(?s).*Missing prep time.*"
+- assertNotVisible: "(?s).*Missing number of servings.*"
+- assertNotVisible: "(?s).*Missing meal type.*"
+- assertNotVisible: "(?s).*Missing difficulty level.*"
+- tapOn: "Got it"
+- assertNotVisible: "Some recipe details are missing"
+
+# Fill: ingredients
+- scrollUntilVisible:
+    element:
+      id: "add-ingredient"
+- tapOn:
+    id: "add-ingredient"
+- tapOn:
+    id: "ingredient-0-amount"
+- inputText: "4"
+- tapOn:
+    id: "ingredient-0-unit"
+- inputText: "pcs"
+- tapOn:
+    id: "ingredient-0-item"
+- inputText: "Eggs"
+- hideKeyboard
+- scrollUntilVisible:
+    element:
+      id: "add-ingredient"
+- tapOn:
+    id: "add-ingredient"
+- tapOn:
+    id: "ingredient-1-amount"
+- inputText: "2"
+- tapOn:
+    id: "ingredient-1-unit"
+- inputText: "cups"
+- tapOn:
+    id: "ingredient-1-item"
+- inputText: "Crushed tomatoes"
+- hideKeyboard
+- scrollUntilVisible:
+    element:
+      id: "add-ingredient"
+- tapOn:
+    id: "add-ingredient"
+- tapOn:
+    id: "ingredient-2-amount"
+- inputText: "1"
+- tapOn:
+    id: "ingredient-2-unit"
+- inputText: "tsp"
+- tapOn:
+    id: "ingredient-2-item"
+- inputText: "Paprika"
+- hideKeyboard
+- tapOn:
+    id: "create-recipe"
+- assertVisible: "Some recipe details are missing"
+- assertVisible: "(?s).*Missing steps.*"
+- assertNotVisible: "(?s).*Missing a title.*"
+- assertNotVisible: "(?s).*Missing prep time.*"
+- assertNotVisible: "(?s).*Missing number of servings.*"
+- assertNotVisible: "(?s).*Missing meal type.*"
+- assertNotVisible: "(?s).*Missing difficulty level.*"
+- assertNotVisible: "(?s).*Missing ingredients.*"
+- tapOn: "Got it"
+- assertNotVisible: "Some recipe details are missing"
+
+# Fill: steps, the last one
+- scrollUntilVisible:
+    element:
+      id: "add-step"
+- tapOn:
+    id: "add-step"
+- tapOn:
+    id: "step-0"
+- inputText: "Heat the tomatoes with the paprika"
+- hideKeyboard
+- scrollUntilVisible:
+    element:
+      id: "add-step"
+- tapOn:
+    id: "add-step"
+- tapOn:
+    id: "step-1"
+- inputText: "Crack the eggs into the sauce"
+- hideKeyboard
+- scrollUntilVisible:
+    element:
+      id: "add-step"
+- tapOn:
+    id: "add-step"
+- tapOn:
+    id: "step-2"
+- inputText: "Cover and cook until the eggs set"
+- hideKeyboard
+
+# 3. Created: back on the recipes screen with the new card
+- tapOn:
+    id: "create-recipe"
+- assertNotVisible: "Some recipe details are missing"
+- extendedWaitUntil:
+    visible: "Recipe created!"
+    timeout: 3000
+- assertVisible:
+    text: "Recipes"
+    selected: true
+- assertVisible: "E2E Shakshuka"
+- assertNotVisible: "Create my first recipe"
+- assertVisible: "40 min"
+- assertVisible: "Medium"
+
+# 3. Saved as entered
+- tapOn: "E2E Shakshuka"
+- assertVisible: "Eggs poached in a spicy tomato sauce"
+- assertVisible:
+    id: "property-prepTime-value"
+    text: "40"
+- assertVisible:
+    id: "property-servings-value"
+    text: "6"
+- assertVisible:
+    id: "property-meal-value"
+    text: "Dinner"
+- assertVisible:
+    id: "property-difficulty-value"
+    text: "Medium"
+# Each row renders as "<amount> <unit> <item>"
+- assertVisible: "4 pcs Eggs"
+- assertVisible: "2 cups Crushed tomatoes"
+- assertVisible: "1 tsp Paprika"
+- tapOn: "Steps"
+- assertVisible: "Heat the tomatoes with the paprika"
+- assertVisible: "Crack the eggs into the sauce"
+- assertVisible: "Cover and cook until the eggs set"
+
+# 4. Still there after a relaunch
+- stopApp
+- launchApp
+- extendedWaitUntil:
+    visible: "E2E Shakshuka"
+    timeout: 20000
+- assertNotVisible: "Create my first recipe"
+- tapOn: "E2E Shakshuka"
+- assertVisible: "Eggs poached in a spicy tomato sauce"
+- assertVisible:
+    id: "property-meal-value"
+    text: "Dinner"
+- assertVisible: "4 pcs Eggs"
+- tapOn: "Steps"
+- assertVisible: "Cover and cook until the eggs set"
+
+# 3. Nothing reached the cloud, from before launch to after the relaunch.
+#    Checked last, so a delayed or retried upload would be counted.
+- runScript:
+    file: ../../scripts/probe-cloud-requests.js
+    env:
+      SINCE: ${output.flowStart}
+- assertTrue:
+    condition: ${output.cloudRequests === 0}
+    label: "No requests at all reached local Supabase"
+- runScript:
+    file: ../../scripts/probe-count.js
+    env:
+      TABLE: "recipes"
+- assertTrue:
+    condition: ${output.rowCount === output.rowsAtStart}
+    label: "No recipe rows added to the database"

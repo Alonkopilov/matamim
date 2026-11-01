@@ -1,0 +1,21 @@
+# Chrome's first-run screen on a fresh device or emulator, shown over the
+# first custom tab. It's device setup, not app behavior, so it's skipped when
+# present. Kept outside flows/ so it doesn't run as a test on its own.
+appId: com.android.chrome
+---
+- runFlow:
+    when:
+      visible: "Stay signed out"
+    commands:
+      - tapOn: "Stay signed out"
+# Other Chrome versions word the same screens differently
+- runFlow:
+    when:
+      visible: "Use without an account"
+    commands:
+      - tapOn: "Use without an account"
+- runFlow:
+    when:
+      visible: "No thanks"
+    commands:
+      - tapOn: "No thanks"

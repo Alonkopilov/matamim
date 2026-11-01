@@ -1,0 +1,326 @@
+# Required fields filled with nothing are still missing: a title of only
+# spaces, an empty ingredient row and an empty step. Blank rows are dropped
+# when saving, so they never count as content.
+#
+# Checks:
+#   1. Blank fields are refused: nothing is created
+#   2. Mixed rows: a trimmed title, blank ingredient and step rows dropped and
+#      the rest renumbered, in what's saved on the device
+#   3. An ingredient with an amount or unit but no name is refused, once
+#   4. Saving an edit checks the same: a title of spaces is refused, and an
+#      empty row added changes nothing and doesn't show
+appId: com.matamim.app.e2e
+name: Guest - blank required fields are refused
+tags:
+  - guest
+---
+- launchApp:
+    clearState: true
+- extendedWaitUntil:
+    visible: "Create my first recipe"
+    timeout: 20000
+- tapOn: "Create my first recipe"
+
+# 1. Everything else is filled properly, so only the blank fields can be missing
+- tapOn:
+    id: "recipe-title"
+- inputText: "   "
+- hideKeyboard
+# The spaces really are in the title (an empty input has no text, only its
+# placeholder as a hint)
+- assertVisible:
+    id: "recipe-title"
+    text: " +"
+- tapOn:
+    id: "property-prepTime"
+- tapOn: "40"
+- waitForAnimationToEnd
+- tapOn: "OK"
+- tapOn:
+    id: "property-servings"
+- tapOn: "6"
+- waitForAnimationToEnd
+- tapOn: "OK"
+- tapOn:
+    id: "property-meal"
+- tapOn: "Dinner"
+- tapOn:
+    id: "property-difficulty"
+- tapOn: "Medium"
+- scrollUntilVisible:
+    element:
+      id: "add-ingredient"
+- tapOn:
+    id: "add-ingredient"
+- assertVisible:
+    id: "ingredient-0-item"
+- scrollUntilVisible:
+    element:
+      id: "add-step"
+- tapOn:
+    id: "add-step"
+- assertVisible:
+    id: "step-0"
+
+- tapOn:
+    id: "create-recipe"
+- assertVisible: "Some recipe details are missing"
+- assertVisible: "(?s).*Missing a title.*"
+- assertVisible: "(?s).*Missing ingredients.*"
+- assertVisible: "(?s).*Missing steps.*"
+- assertNotVisible: "(?s).*Missing prep time.*"
+- assertNotVisible: "(?s).*Missing number of servings.*"
+- assertNotVisible: "(?s).*Missing meal type.*"
+- assertNotVisible: "(?s).*Missing difficulty level.*"
+- assertNotVisible: "Recipe created!"
+- tapOn: "Got it"
+- assertNotVisible: "Some recipe details are missing"
+- runScript: ../../scripts/probe-device-recipes.js
+- assertTrue:
+    condition: ${output.deviceRecipeCount === 0}
+    label: "Nothing was saved"
+
+# 2. The same form, now with content among the blank rows: a filled
+#    ingredient and then an empty one, a step of only spaces, a filled one and
+#    an empty one, and a title with spaces around it
+# The form is scrolled down from check 1
+- scrollUntilVisible:
+    element:
+      id: "recipe-title"
+    direction: UP
+- runFlow:
+    file: ../../subflows/replace-text.yaml
+    env:
+      ID: "recipe-title"
+      TEXT: "  Mixed Soup  "
+- scrollUntilVisible:
+    element:
+      id: "ingredient-0-amount"
+    centerElement: true
+- tapOn:
+    id: "ingredient-0-amount"
+- inputText: "2"
+- tapOn:
+    id: "ingredient-0-unit"
+- inputText: "cups"
+- tapOn:
+    id: "ingredient-0-item"
+- inputText: "Flour"
+- hideKeyboard
+- scrollUntilVisible:
+    element:
+      id: "add-ingredient"
+- tapOn:
+    id: "add-ingredient"
+- assertVisible:
+    id: "ingredient-1-item"
+- scrollUntilVisible:
+    element:
+      id: "step-0"
+    centerElement: true
+- tapOn:
+    id: "step-0"
+- inputText: "   "
+- hideKeyboard
+- scrollUntilVisible:
+    element:
+      id: "add-step"
+- tapOn:
+    id: "add-step"
+- tapOn:
+    id: "step-1"
+- inputText: "Bake"
+- hideKeyboard
+- scrollUntilVisible:
+    element:
+      id: "add-step"
+- tapOn:
+    id: "add-step"
+- assertVisible:
+    id: "step-2"
+- tapOn:
+    id: "create-recipe"
+- extendedWaitUntil:
+    visible: "Recipe created!"
+    timeout: 10000
+- assertNotVisible: "Some recipe details are missing"
+- assertVisible:
+    text: "Recipes"
+    selected: true
+- runScript: ../../scripts/probe-device-recipes.js
+- assertTrue:
+    condition: ${output.deviceRecipeNames === "Mixed Soup"}
+    label: "Saved with the trimmed title"
+- assertTrue:
+    condition: ${output.deviceRecipes["Mixed Soup"].ingredients.length === 1 && output.deviceRecipes["Mixed Soup"].ingredients[0].amount === "2" && output.deviceRecipes["Mixed Soup"].ingredients[0].unit === "cups" && output.deviceRecipes["Mixed Soup"].ingredients[0].item === "Flour"}
+    label: "Only the filled ingredient was saved, as typed"
+- assertTrue:
+    condition: ${output.deviceRecipes["Mixed Soup"].steps.length === 1 && output.deviceRecipes["Mixed Soup"].steps[0] === "Bake"}
+    label: "Only the filled step was saved, as typed"
+- assertTrue:
+    condition: ${output.deviceRecipes["Mixed Soup"].sortOrdersOk}
+    label: "The rows are numbered from 0 with no gaps"
+# Opened, one ingredient and one step (the rows' ids are only on the edit form)
+- tapOn: "Mixed Soup"
+- assertVisible: "2 cups Flour"
+- tapOn: "Steps"
+- assertVisible: "Bake"
+- tapOn: "Edit"
+- scrollUntilVisible:
+    element:
+      id: "ingredient-0-item"
+    centerElement: true
+- assertNotVisible:
+    id: "ingredient-1-item"
+- scrollUntilVisible:
+    element:
+      id: "step-0"
+    centerElement: true
+- assertVisible:
+    id: "step-0"
+    text: "Bake"
+- assertNotVisible:
+    id: "step-1"
+- tapOn: "Back"
+- assertNotVisible: "Discard changes\\?"
+
+# 3. A new form with an ingredient that has an amount but no name, and
+#    another with only a unit. The problem is listed once, and it's the only
+#    one: the ingredients themselves aren't missing.
+- tapOn:
+    id: "tab-create"
+- tapOn: "New recipe"
+- tapOn:
+    id: "recipe-title"
+- inputText: "Nameless Soup"
+- hideKeyboard
+- tapOn:
+    id: "property-prepTime"
+- tapOn: "40"
+- waitForAnimationToEnd
+- tapOn: "OK"
+- tapOn:
+    id: "property-servings"
+- tapOn: "6"
+- waitForAnimationToEnd
+- tapOn: "OK"
+- tapOn:
+    id: "property-meal"
+- tapOn: "Dinner"
+- tapOn:
+    id: "property-difficulty"
+- tapOn: "Medium"
+- scrollUntilVisible:
+    element:
+      id: "add-ingredient"
+- tapOn:
+    id: "add-ingredient"
+- tapOn:
+    id: "ingredient-0-amount"
+- inputText: "2"
+- hideKeyboard
+- scrollUntilVisible:
+    element:
+      id: "add-ingredient"
+- tapOn:
+    id: "add-ingredient"
+- tapOn:
+    id: "ingredient-1-unit"
+- inputText: "cups"
+- hideKeyboard
+- scrollUntilVisible:
+    element:
+      id: "add-step"
+- tapOn:
+    id: "add-step"
+- tapOn:
+    id: "step-0"
+- inputText: "Mix"
+- hideKeyboard
+- tapOn:
+    id: "create-recipe"
+- assertVisible: "Some recipe details are missing"
+- assertVisible: "(?s).*An ingredient is missing its name.*"
+- assertNotVisible: "(?s).*missing its name.*missing its name.*"
+- assertNotVisible: "(?s).*Missing ingredients.*"
+- assertNotVisible: "(?s).*Missing a title.*"
+- assertNotVisible: "(?s).*Missing steps.*"
+- assertNotVisible: "Recipe created!"
+- tapOn: "Got it"
+- runScript: ../../scripts/probe-device-recipes.js
+- assertTrue:
+    condition: ${output.deviceRecipeNames === "Mixed Soup"}
+    label: "Nothing more was saved"
+
+# 4. Saving an edit of Mixed Soup. A title of only spaces is refused.
+- tapOn: "Back"
+- tapOn: "Mixed Soup"
+- tapOn: "Edit"
+- runFlow:
+    file: ../../subflows/replace-text.yaml
+    env:
+      ID: "recipe-title"
+      TEXT: "   "
+- hideKeyboard
+- tapOn:
+    id: "save-recipe"
+- assertVisible: "Some recipe details are missing"
+- assertVisible: "(?s).*Missing a title.*"
+- assertNotVisible: "(?s).*Missing ingredients.*"
+- assertNotVisible: "(?s).*Missing steps.*"
+- assertNotVisible: "Recipe saved!"
+- tapOn: "Got it"
+- assertVisible:
+    id: "save-recipe"
+- runScript: ../../scripts/probe-device-recipes.js
+- assertTrue:
+    condition: ${output.deviceRecipeNames === "Mixed Soup"}
+    label: "The refused title wasn't saved"
+# With the title back, an empty ingredient row and an empty step added
+- runFlow:
+    file: ../../subflows/replace-text.yaml
+    env:
+      ID: "recipe-title"
+      TEXT: "Mixed Soup"
+- hideKeyboard
+- scrollUntilVisible:
+    element:
+      id: "add-ingredient"
+- tapOn:
+    id: "add-ingredient"
+- assertVisible:
+    id: "ingredient-1-item"
+- scrollUntilVisible:
+    element:
+      id: "add-step"
+- tapOn:
+    id: "add-step"
+- assertVisible:
+    id: "step-1"
+- tapOn:
+    id: "save-recipe"
+- extendedWaitUntil:
+    visible: "Recipe saved!"
+    timeout: 3000
+- assertNotVisible:
+    id: "save-recipe"
+- runScript: ../../scripts/probe-device-recipes.js
+- assertTrue:
+    condition: ${output.deviceRecipeNames === "Mixed Soup" && output.deviceRecipes["Mixed Soup"].ingredients.length === 1 && output.deviceRecipes["Mixed Soup"].steps.length === 1 && output.deviceRecipes["Mixed Soup"].steps[0] === "Bake" && output.deviceRecipes["Mixed Soup"].sortOrdersOk}
+    label: "The saved recipe is unchanged, the empty rows weren't kept"
+# The screen shows the saved recipe too, not the rows that were dropped
+- tapOn: "Edit"
+- scrollUntilVisible:
+    element:
+      id: "ingredient-0-item"
+    centerElement: true
+- assertNotVisible:
+    id: "ingredient-1-item"
+- scrollUntilVisible:
+    element:
+      id: "step-0"
+    centerElement: true
+- assertNotVisible:
+    id: "step-1"
+- tapOn: "Back"
+- assertNotVisible: "Discard changes\\?"

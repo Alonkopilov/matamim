@@ -1,0 +1,188 @@
+# A free account deletes itself. Everything of it goes, on the server and on
+# the device, and nothing of any other account does.
+#
+# The seed gives delete@ rows as a lapsed subscriber who is a member of
+# keeper@'s team: recipes, profile, team membership, an expired entitlement,
+# AI import counters and events, a photo in Storage, and Auth's own rows.
+# keeper@ has the same kinds of rows, and hosts the team. delete@ hosts no
+# team and created no invite, so deleting a host (the team handed over or
+# deleted) isn't covered here, it's for the premium flows.
+#
+# Checks:
+#   1. Deleting asks first, and Cancel deletes nothing
+#   2. Confirmed: logged out, a guest's empty recipes screen, the login form
+#      on the Account tab, and no recipes left in the app's storage, the
+#      team's included
+#   3. On the server, none of delete@'s rows are left in any table that
+#      references a user (Auth's included), nor its photo. The probe also fails the check if a
+#      table references users without being counted.
+#   4. keeper@ keeps every row, its team included
+#   5. Logging in as delete@ is refused. After a relaunch, still a guest
+#      with nothing stored.
+#
+# Deleting logs out, and a free account's recipe waits in the upload queue,
+# so the app restarts (like logging out, see local-recipes.yaml). The "Your
+# account was deleted" message is shown after the restart, and it's dismissed
+# here without a check of its own: delete-account-message.yaml covers it.
+appId: com.matamim.app.e2e
+name: Free - delete account
+tags:
+  - free
+---
+# What's there before
+- runScript:
+    file: ../../scripts/probe-user-rows.js
+    env:
+      USER: "e2e00000-0000-0000-0000-000000000009"
+- assertTrue:
+    condition: ${output.userRowsUncovered === ""}
+    label: "Every table that references a user is counted"
+- assertTrue:
+    condition: ${output.rows_auth_users === 1 && output.rows_auth_identities === 1 && output.rows_public_profiles === 1 && output.rows_public_recipes === 2 && output.rows_public_team_members === 1 && output.rows_public_premium_entitlements === 1 && output.rows_public_free_ai_imports === 1 && output.rows_public_ai_import_events === 1 && output.rows_storage_objects === 1}
+    label: "delete@ has its seeded rows"
+- runScript:
+    file: ../../scripts/probe-user-rows.js
+    env:
+      USER: "e2e00000-0000-0000-0000-000000000010"
+- assertTrue:
+    condition: ${output.rows_auth_users === 1 && output.rows_public_profiles === 1 && output.rows_public_recipes === 2 && output.rows_public_teams === 1 && output.rows_public_team_invites === 1 && output.rows_public_premium_entitlements === 1 && output.rows_public_free_ai_imports === 1 && output.rows_public_ai_import_events === 1 && output.rows_storage_objects === 1}
+    label: "keeper@ has its seeded rows"
+- evalScript: ${output.keeperRowsBefore = output.userRowsTotal}
+
+- launchApp:
+    clearState: true
+- extendedWaitUntil:
+    visible: "Create my first recipe"
+    timeout: 20000
+- runFlow:
+    file: ../../subflows/login.yaml
+    env:
+      EMAIL: "delete@e2e.test"
+      NAME: "Delete Cook"
+# As a member, the team's recipe is shown and kept on the device
+- tapOn: "Recipes"
+- extendedWaitUntil:
+    visible: "Kept Soup"
+    timeout: 15000
+- retry:
+    maxRetries: 5
+    commands:
+      - runScript: ../../scripts/probe-device-recipes.js
+      - assertTrue:
+          condition: ${output.deviceTeamRecipeCount > 0}
+          label: "The team's recipe is on the device"
+# A recipe of its own on the device too
+- tapOn:
+    id: "tab-create"
+- tapOn: "New recipe"
+- runFlow:
+    file: ../../subflows/create-meal-recipe.yaml
+    env:
+      NAME: "Doomed Soup"
+      MEAL: "Lunch"
+- runScript: ../../scripts/probe-device-recipes.js
+- assertTrue:
+    condition: ${output.deviceRecipeNames.split("|").indexOf("Doomed Soup") !== -1}
+    label: "The recipe is on the device"
+
+# 1. Asks first, Cancel deletes nothing
+- tapOn: "Account"
+- scrollUntilVisible:
+    element: "Delete account"
+- tapOn: "Delete account"
+- extendedWaitUntil:
+    visible: "(?s)Your account, recipes and photos will be deleted from the cloud and from this device\\. This can't be undone\\..*"
+    timeout: 5000
+- tapOn:
+    id: "alert-cancel"
+- extendedWaitUntil:
+    notVisible: "(?s)Your account, recipes and photos will be deleted.*"
+    timeout: 5000
+- assertVisible: "delete@e2e\\.test"
+- runScript:
+    file: ../../scripts/probe-user-rows.js
+    env:
+      USER: "e2e00000-0000-0000-0000-000000000009"
+- assertTrue:
+    condition: ${output.rows_auth_users === 1 && output.rows_public_recipes === 2 && output.rows_storage_objects === 1}
+    label: "Cancel deleted nothing"
+
+# 2. Confirmed. Still all there right before, so nothing was deleted late
+#    by Cancel.
+- runScript:
+    file: ../../scripts/probe-user-rows.js
+    env:
+      USER: "e2e00000-0000-0000-0000-000000000009"
+- assertTrue:
+    condition: ${output.rows_auth_users === 1 && output.rows_public_recipes === 2 && output.rows_storage_objects === 1 && output.rows_public_team_members === 1}
+    label: "Still nothing deleted before confirming"
+- tapOn: "Delete account"
+- extendedWaitUntil:
+    visible: "(?s)Your account, recipes and photos will be deleted.*"
+    timeout: 5000
+- assertVisible:
+    id: "alert-destructive"
+    text: "Delete account"
+- tapOn:
+    id: "alert-destructive"
+- extendedWaitUntil:
+    visible: "Hello, Anonymous Chef!"
+    timeout: 20000
+# The message covers the screen until it's dismissed
+- assertVisible: "Your account was deleted"
+- tapOn: "Got it"
+- assertVisible: "Create my first recipe"
+- assertNotVisible: "Doomed Soup"
+- assertNotVisible: "Kept Soup"
+- tapOn: "Account"
+- assertVisible:
+    id: "account-submit"
+- assertNotVisible: "delete@e2e\\.test"
+- runScript: ../../scripts/probe-device-recipes.js
+- assertTrue:
+    condition: ${output.deviceRecipeCount === 0 && output.deviceTeamRecipeCount === 0}
+    label: "No recipes, the team's included, left on the device"
+
+# 3. Nothing of delete@ on the server
+- runScript:
+    file: ../../scripts/probe-user-rows.js
+    env:
+      USER: "e2e00000-0000-0000-0000-000000000009"
+- assertTrue:
+    condition: ${output.userRowsUncovered === ""}
+    label: "Every table that references a user is counted"
+- assertTrue:
+    condition: ${output.userRowsTotal === 0}
+    label: "No rows of delete@ in any table, and no photo"
+
+# 4. keeper@ keeps everything
+- runScript:
+    file: ../../scripts/probe-user-rows.js
+    env:
+      USER: "e2e00000-0000-0000-0000-000000000010"
+- assertTrue:
+    condition: ${output.userRowsTotal === output.keeperRowsBefore && output.rows_public_teams === 1 && output.rows_public_recipes === 2 && output.rows_storage_objects === 1}
+    label: "keeper@ kept every row, its team and its photo"
+
+# 5. The account is gone for good
+- runScript:
+    file: ../../scripts/login-check.js
+    env:
+      EMAIL: "delete@e2e.test"
+      PASSWORD: ${E2E_PASSWORD}
+- assertTrue:
+    condition: ${output.loginStatus === 400}
+    label: "Logging in as delete@ is refused"
+- stopApp
+- launchApp
+- extendedWaitUntil:
+    visible: "Hello, Anonymous Chef!"
+    timeout: 20000
+- assertVisible: "Create my first recipe"
+- runScript: ../../scripts/probe-device-recipes.js
+- assertTrue:
+    condition: ${output.deviceRecipeCount === 0}
+    label: "After a relaunch, still nothing on the device"
+- tapOn: "Account"
+- assertVisible:
+    id: "account-submit"

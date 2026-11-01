@@ -1,0 +1,74 @@
+# A guest deletes a saved recipe.
+#
+# Checks:
+#   1. Delete asks first, then goes back to the recipes screen without the
+#      recipe
+#   2. It's still gone after a relaunch
+#   3. Nothing reached the cloud (no requests to Supabase, no rows added)
+appId: com.matamim.app.e2e
+name: Guest - delete a recipe
+tags:
+  - guest
+---
+# Starts the network window before launch, so startup requests count too
+- runScript: ../../scripts/probe-now.js
+- evalScript: ${output.flowStart = output.since}
+# Other flows in a suite run leave recipe rows, so count what this flow adds
+- runScript:
+    file: ../../scripts/probe-count.js
+    env:
+      TABLE: "recipes"
+- evalScript: ${output.rowsAtStart = output.rowCount}
+- launchApp:
+    clearState: true
+- extendedWaitUntil:
+    visible: "Create my first recipe"
+    timeout: 20000
+- tapOn: "Create my first recipe"
+- runFlow:
+    file: ../../subflows/create-recipe.yaml
+    env:
+      NAME: "E2E Shakshuka"
+- tapOn: "E2E Shakshuka"
+- assertVisible:
+    id: "property-meal-value"
+    text: "Dinner"
+
+# 1. Delete it: back on the recipes screen, and it's gone
+- tapOn: "Delete"
+- assertVisible: "Delete recipe"
+- tapOn:
+    text: "Delete"
+    below: "Are you sure\\? This recipe will be deleted permanently."
+- extendedWaitUntil:
+    visible: "Recipe deleted!"
+    timeout: 3000
+- assertVisible:
+    text: "Recipes"
+    selected: true
+- assertNotVisible: "E2E Shakshuka"
+- assertVisible: "Create my first recipe"
+
+# 2. Still gone after a relaunch
+- stopApp
+- launchApp
+- extendedWaitUntil:
+    visible: "Create my first recipe"
+    timeout: 20000
+- assertNotVisible: "E2E Shakshuka"
+
+# 3. Nothing reached the cloud, from before launch to the end
+- runScript:
+    file: ../../scripts/probe-cloud-requests.js
+    env:
+      SINCE: ${output.flowStart}
+- assertTrue:
+    condition: ${output.cloudRequests === 0}
+    label: "No requests at all reached local Supabase"
+- runScript:
+    file: ../../scripts/probe-count.js
+    env:
+      TABLE: "recipes"
+- assertTrue:
+    condition: ${output.rowCount === output.rowsAtStart}
+    label: "No recipe rows added to the database"

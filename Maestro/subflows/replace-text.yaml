@@ -1,0 +1,12 @@
+# Replaces all the text in a field. A tap leaves the cursor where it landed
+# and eraseText deletes before it, so the cursor is moved to the end first.
+# Single-line text only, the cursor goes to the end of the current line.
+#
+# env: ID, the field's testID. TEXT, the new text
+appId: com.matamim.app.e2e
+---
+- tapOn:
+    id: ${ID}
+- runScript: ../scripts/probe-cursor-end.js
+- eraseText: 100
+- inputText: ${TEXT}

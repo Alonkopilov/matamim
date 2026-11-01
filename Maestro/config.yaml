@@ -1,0 +1,4 @@
+# Run through scripts/e2e/run.sh, which applies the guardrails and seeds the
+# local database first. Flows target the e2e app id only.
+flows:
+  - "flows/**"

@@ -1,0 +1,12 @@
+# Clears the 8 digits left on the join team screen after a refused code,
+# one backspace at a time.
+appId: com.matamim.app.e2e
+---
+- scrollUntilVisible:
+    element:
+      id: "join-key-back"
+- repeat:
+    times: 8
+    commands:
+      - tapOn:
+          id: "join-key-back"

@@ -1,0 +1,12 @@
+# Finds a recipe card anywhere in the recipes screen's list: back to the top,
+# then scrolls down until it's on screen. Fails if it isn't in the list.
+#
+# env: NAME, the recipe's title
+appId: com.matamim.app.e2e
+---
+- scrollUntilVisible:
+    element:
+      id: "recipe-search"
+    direction: UP
+- scrollUntilVisible:
+    element: ${NAME}

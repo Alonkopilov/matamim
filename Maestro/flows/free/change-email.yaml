@@ -1,0 +1,329 @@
+# A free account changes its email. Both the current and the new address get
+# a code, and the email only changes once both are entered.
+#
+# Checks:
+#   1. Refused before sending anything: empty, not an email, the current
+#      email (in other letter case), with sign up's messages. An address
+#      another account has is refused by Auth. No codes are emailed for any
+#      of them.
+#   2. A new address: one code to the current address, one to the new one
+#   3. The new address's code is refused where the current address's is
+#      asked for. (The other way around can't be tried: the current
+#      address's code is used up by then, so it's only shown refused as used.)
+#   4. "Send a new code" emails both addresses again, and the earlier codes
+#      no longer work
+#   5. Both newest codes change the email: "Email changed!", the Account tab
+#      shows it, Auth and profiles have it, a used code is refused when tried
+#      again, logging in works with the new email and not the old one. Kept
+#      after a relaunch.
+appId: com.matamim.app.e2e
+name: Free - change email
+tags:
+  - free
+---
+- runScript: ../../scripts/probe-now.js
+- evalScript: ${output.flowStart = output.since}
+- runScript:
+    file: ../../scripts/mailpit-clear.js
+    env:
+      EMAIL: "email@e2e.test"
+- runScript:
+    file: ../../scripts/mailpit-clear.js
+    env:
+      EMAIL: "email.new@e2e.test"
+- runScript:
+    file: ../../scripts/mailpit-clear.js
+    env:
+      EMAIL: "owner@e2e.test"
+- launchApp:
+    clearState: true
+- extendedWaitUntil:
+    visible: "Create my first recipe"
+    timeout: 20000
+- runFlow:
+    file: ../../subflows/login.yaml
+    env:
+      EMAIL: "email@e2e.test"
+      NAME: "Email Cook"
+
+# 1. Refused before anything is sent
+- tapOn: "Change email"
+- extendedWaitUntil:
+    visible: "We'll send a code to email@e2e\\.test and another to the new address\\."
+    timeout: 5000
+- tapOn:
+    id: "change-submit"
+- assertVisible: "Email is required\\."
+- tapOn:
+    id: "change-email"
+- inputText: "not-an-email"
+- tapOn:
+    id: "change-submit"
+- assertVisible: "That email address isn't valid \\(e\\.g\\. example@email\\.com\\)\\."
+- runFlow:
+    file: ../../subflows/replace-text.yaml
+    env:
+      ID: "change-email"
+      TEXT: "EMAIL@e2e.test"
+- tapOn:
+    id: "change-submit"
+- assertVisible: "That's already your email"
+# Another account's address
+- runFlow:
+    file: ../../subflows/replace-text.yaml
+    env:
+      ID: "change-email"
+      TEXT: "owner@e2e.test"
+- tapOn:
+    id: "change-submit"
+- extendedWaitUntil:
+    visible: "This email address is already registered"
+    timeout: 10000
+- assertVisible:
+    id: "change-email"
+- assertNotVisible:
+    id: "change-code"
+- runScript:
+    file: ../../scripts/mailpit-code.js
+    env:
+      EMAIL: "email@e2e.test"
+- assertTrue:
+    condition: ${output.emailCount === 0}
+    label: "No code was sent to the current address"
+- runScript:
+    file: ../../scripts/mailpit-code.js
+    env:
+      EMAIL: "owner@e2e.test"
+- assertTrue:
+    condition: ${output.emailCount === 0}
+    label: "Nothing was sent to the other account's address"
+
+# 2. A new address: a code to each
+- runFlow:
+    file: ../../subflows/replace-text.yaml
+    env:
+      ID: "change-email"
+      TEXT: "email.new@e2e.test"
+- tapOn:
+    id: "change-submit"
+- extendedWaitUntil:
+    visible: "Enter the code we sent to email@e2e\\.test\\."
+    timeout: 10000
+- assertVisible: "Code sent, check your email"
+- retry:
+    maxRetries: 5
+    commands:
+      - runScript:
+          file: ../../scripts/mailpit-code.js
+          env:
+            EMAIL: "email@e2e.test"
+      - assertTrue:
+          condition: ${output.emailCount === 1 && output.code.length === 6}
+          label: "One code to the current address"
+- evalScript: ${output.oldCode1 = output.code}
+- retry:
+    maxRetries: 5
+    commands:
+      - runScript:
+          file: ../../scripts/mailpit-code.js
+          env:
+            EMAIL: "email.new@e2e.test"
+      - assertTrue:
+          condition: ${output.emailCount === 1 && output.code.length === 6}
+          label: "One code to the new address"
+- evalScript: ${output.newCode1 = output.code}
+- assertTrue:
+    condition: ${output.oldCode1 !== output.newCode1}
+    label: "The two codes differ"
+
+# 3. The new address's code where the current address's is asked for
+- tapOn:
+    id: "change-code"
+- inputText: ${output.newCode1}
+- tapOn:
+    id: "change-submit"
+- extendedWaitUntil:
+    visible: "The code is wrong or has expired"
+    timeout: 10000
+- assertVisible: "Enter the code we sent to email@e2e\\.test\\."
+
+# 4. Sending again replaces both codes
+- tapOn: "Send a new code"
+- extendedWaitUntil:
+    visible: "Code sent, check your email"
+    timeout: 10000
+- retry:
+    maxRetries: 5
+    commands:
+      - runScript:
+          file: ../../scripts/mailpit-code.js
+          env:
+            EMAIL: "email@e2e.test"
+      - assertTrue:
+          condition: ${output.emailCount === 2 && output.code.length === 6}
+          label: "A second code to the current address"
+- evalScript: ${output.oldCode2 = output.code}
+- retry:
+    maxRetries: 5
+    commands:
+      - runScript:
+          file: ../../scripts/mailpit-code.js
+          env:
+            EMAIL: "email.new@e2e.test"
+      - assertTrue:
+          condition: ${output.emailCount === 2 && output.code.length === 6}
+          label: "A second code to the new address"
+- evalScript: ${output.newCode2 = output.code}
+- assertTrue:
+    condition: ${output.oldCode2 !== output.oldCode1 && output.newCode2 !== output.newCode1}
+    label: "Both codes are new"
+# The current address's first code no longer works
+- runFlow:
+    file: ../../subflows/replace-text.yaml
+    env:
+      ID: "change-code"
+      TEXT: ${output.oldCode1}
+- tapOn:
+    id: "change-submit"
+- extendedWaitUntil:
+    visible: "The code is wrong or has expired"
+    timeout: 10000
+- assertVisible: "Enter the code we sent to email@e2e\\.test\\."
+# Its newest code does
+- runFlow:
+    file: ../../subflows/replace-text.yaml
+    env:
+      ID: "change-code"
+      TEXT: ${output.oldCode2}
+- tapOn:
+    id: "change-submit"
+- extendedWaitUntil:
+    visible: "Last step: enter the code we sent to email\\.new@e2e\\.test to confirm the new address\\."
+    timeout: 10000
+# Not changed yet, the new address's code is still needed
+- runScript:
+    file: ../../scripts/probe-account.js
+    env:
+      USER: "e2e00000-0000-0000-0000-000000000007"
+- assertTrue:
+    condition: ${output.authEmail === "email@e2e.test" && output.profileEmail === "email@e2e.test"}
+    label: "One code isn't enough to change the email"
+
+# The current address's code, already used, where the new address's is
+# asked for
+- tapOn:
+    id: "change-code"
+- inputText: ${output.oldCode2}
+- tapOn:
+    id: "change-submit"
+- extendedWaitUntil:
+    visible: "The code is wrong or has expired"
+    timeout: 10000
+# 4. The new address's first code no longer works
+- runFlow:
+    file: ../../subflows/replace-text.yaml
+    env:
+      ID: "change-code"
+      TEXT: ${output.newCode1}
+# The same message is still up from the last attempt, so it's checked once
+# Auth has answered this one. Retried, Kong logs a request once it's answered
+- runScript:
+    file: ../../scripts/probe-cloud-requests.js
+    env:
+      SINCE: ${output.flowStart}
+      PATHS: "/auth/v1/verify"
+- evalScript: ${output.verifiesBefore = output.cloudRequests}
+- tapOn:
+    id: "change-submit"
+- retry:
+    maxRetries: 10
+    commands:
+      - runScript:
+          file: ../../scripts/probe-cloud-requests.js
+          env:
+            SINCE: ${output.flowStart}
+            PATHS: "/auth/v1/verify"
+      - assertTrue:
+          condition: ${output.cloudRequests === output.verifiesBefore + 1}
+          label: "Auth answered this code"
+- assertVisible: "The code is wrong or has expired"
+- assertVisible: "Last step: enter the code we sent to email\\.new@e2e\\.test to confirm the new address\\."
+- assertNotVisible: "Email changed!"
+- runScript:
+    file: ../../scripts/probe-account.js
+    env:
+      USER: "e2e00000-0000-0000-0000-000000000007"
+- assertTrue:
+    condition: ${output.authEmail === "email@e2e.test"}
+    label: "The refused codes changed nothing"
+
+# 5. Its newest code changes the email
+- runFlow:
+    file: ../../subflows/replace-text.yaml
+    env:
+      ID: "change-code"
+      TEXT: ${output.newCode2}
+- tapOn:
+    id: "change-submit"
+- extendedWaitUntil:
+    visible: "Email changed!"
+    timeout: 10000
+- extendedWaitUntil:
+    notVisible:
+      id: "change-code"
+    timeout: 5000
+- assertVisible: "email\\.new@e2e\\.test"
+- assertNotVisible: "email@e2e\\.test"
+- runScript:
+    file: ../../scripts/probe-account.js
+    env:
+      USER: "e2e00000-0000-0000-0000-000000000007"
+- assertTrue:
+    condition: ${output.authEmail === "email.new@e2e.test" && output.profileEmail === "email.new@e2e.test"}
+    label: "The new email in Auth and in profiles"
+# A used code can't be used again
+- runScript:
+    file: ../../scripts/verify-code.js
+    env:
+      EMAIL: "email.new@e2e.test"
+      CODE: ${output.newCode2}
+      TYPE: "email_change"
+- assertTrue:
+    condition: ${output.verifyStatus === 403}
+    label: "The used code is refused when tried again"
+# Logging in: the new email works, the old one doesn't
+- runScript:
+    file: ../../scripts/login-check.js
+    env:
+      EMAIL: "email.new@e2e.test"
+      PASSWORD: ${E2E_PASSWORD}
+- assertTrue:
+    condition: ${output.loginStatus === 200}
+    label: "Logging in with the new email works"
+- runScript:
+    file: ../../scripts/login-check.js
+    env:
+      EMAIL: "email@e2e.test"
+      PASSWORD: ${E2E_PASSWORD}
+- assertTrue:
+    condition: ${output.loginStatus === 400}
+    label: "Logging in with the old email doesn't"
+
+# Nothing was ever sent to the other account's address
+- runScript:
+    file: ../../scripts/mailpit-code.js
+    env:
+      EMAIL: "owner@e2e.test"
+- assertTrue:
+    condition: ${output.emailCount === 0}
+    label: "Still nothing sent to the other account's address"
+
+# 5. Kept after a relaunch
+- stopApp
+- launchApp
+- extendedWaitUntil:
+    visible: "Hello, Email Cook!"
+    timeout: 20000
+- tapOn: "Account"
+- assertVisible: "email\\.new@e2e\\.test"
+- assertNotVisible: "email@e2e\\.test"

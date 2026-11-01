@@ -1,0 +1,253 @@
+# A host removes a member from the team, and the removed member finds out.
+#
+# Seed: rmhost@ (premium, cloud sync on) hosts Remove Team with Remove Host
+# Pie. Its members, by join date, are removed@ ("Removed Cook"), kept@ ("Kept
+# Cook") and kicked@ ("Kicked Cook"), all free. rmhost@ and kicked@ use the
+# app.
+#
+# Checks:
+#   1. The host sees Members: 4, each member's row with its email and a
+#      remove button (tappable inside the row), and none on its own row
+#   2. Removing asks first (Cancel keeps all 4), then removes the member:
+#      told so, Members: 3, and on the server too
+#   3. With only free members left the host's leave button asks to delete the
+#      team (no hand-over), and Cancel keeps it
+#   4. A removed member who refreshes is told the team is gone or it was
+#      removed, lands on Account with Shared team off and unlocked, and loses
+#      the team's recipe from the recipes and the device
+appId: com.matamim.app.e2e
+name: Team - the host removes members
+tags:
+  - team
+---
+- runScript:
+    file: ../../scripts/revenuecat-grant.js
+    env:
+      USER: "e2e00000-0000-0000-0000-000000000047"
+- launchApp:
+    clearState: true
+- extendedWaitUntil:
+    visible: "Create my first recipe"
+    timeout: 20000
+
+# 1. The host's view
+- runFlow:
+    file: ../../subflows/login.yaml
+    env:
+      EMAIL: "rmhost@e2e.test"
+      NAME: "Remove Host"
+- retry:
+    maxRetries: 5
+    commands:
+      - tapOn: "Team"
+      - extendedWaitUntil:
+          visible: "The culinary team"
+          timeout: 4000
+- assertVisible:
+    id: "team-title"
+    text: "Remove Team"
+- assertVisible: "Members: 4"
+- assertVisible:
+    id: "team-member"
+    text: "Remove Host, rmhost@e2e.test, Premium, Head chef"
+- assertVisible:
+    id: "team-member"
+    text: "Removed Cook, removed@e2e.test"
+- scrollUntilVisible:
+    element: "Kicked Cook, kicked@e2e.test.*"
+- assertVisible: "Kept Cook, kept@e2e.test.*"
+# Three remove buttons, none on the host's own row
+- assertVisible:
+    id: "team-member-remove"
+    index: 2
+- assertNotVisible:
+    id: "team-member-remove"
+    index: 3
+- assertVisible:
+    id: "team-member-remove"
+    childOf:
+      id: "team-member"
+      text: "Removed Cook, removed@e2e.test"
+- assertNotVisible:
+    id: "team-member-remove"
+    childOf:
+      id: "team-member"
+      text: "Remove Host, .*"
+
+# 2. Removing Removed Cook
+- scrollUntilVisible:
+    element:
+      id: "team-title"
+    direction: UP
+- tapOn:
+    id: "team-member-remove"
+    index: 0
+- extendedWaitUntil:
+    visible: "Remove Removed Cook from the team\\? They won't see the team's recipes anymore, and their own recipes will stay safe\\."
+    timeout: 5000
+- assertVisible: "Remove member"
+- tapOn:
+    id: "alert-cancel"
+- extendedWaitUntil:
+    notVisible: "Remove Removed Cook from the team\\?.*"
+    timeout: 5000
+- assertVisible: "Members: 4"
+- runScript:
+    file: ../../scripts/probe-team.js
+    env:
+      TEAM: "e2e7ea00-0000-0000-0000-000000000047"
+      USER: ""
+- assertTrue:
+    condition: ${output.teamMembers === "e2e00000-0000-0000-0000-000000000048|e2e00000-0000-0000-0000-000000000049|e2e00000-0000-0000-0000-000000000050"}
+    label: "Cancel removed nobody"
+- tapOn:
+    id: "team-member-remove"
+    index: 0
+- extendedWaitUntil:
+    visible: "Remove Removed Cook from the team\\?.*"
+    timeout: 5000
+- tapOn:
+    id: "alert-destructive"
+- extendedWaitUntil:
+    visible: "Removed Cook was removed from the team\\."
+    timeout: 15000
+- assertVisible: "Members: 3"
+- assertNotVisible: ".*Removed Cook, removed@e2e.test.*"
+- assertVisible: "Kept Cook, kept@e2e.test.*"
+- runScript:
+    file: ../../scripts/probe-team.js
+    env:
+      TEAM: "e2e7ea00-0000-0000-0000-000000000047"
+      USER: ""
+- assertTrue:
+    condition: ${output.teamMembers === "e2e00000-0000-0000-0000-000000000049|e2e00000-0000-0000-0000-000000000050"}
+    label: "On the server only kept@ and kicked@ are left"
+- runScript:
+    file: ../../scripts/probe-team.js
+    env:
+      TEAM: ""
+      USER: "e2e00000-0000-0000-0000-000000000048"
+- assertTrue:
+    condition: ${!output.teamExists}
+    label: "removed@ is in no team"
+
+# 3. Only free members are left, so leaving deletes the team
+# The toast is gone first, it covers the top of the screen
+- extendedWaitUntil:
+    notVisible: "Removed Cook was removed from the team\\."
+    timeout: 10000
+- tapOn:
+    id: "team-leave"
+- extendedWaitUntil:
+    visible: "Are you sure you want to delete the team\\? All members will leave it, but everyone's recipes will stay safe\\."
+    timeout: 5000
+- tapOn:
+    id: "alert-cancel"
+- extendedWaitUntil:
+    notVisible: "Are you sure you want to delete the team\\?.*"
+    timeout: 5000
+- assertVisible: "Members: 3"
+- runScript:
+    file: ../../scripts/probe-team.js
+    env:
+      TEAM: "e2e7ea00-0000-0000-0000-000000000047"
+      USER: ""
+- assertTrue:
+    condition: ${output.teamExists && output.teamHost === "e2e00000-0000-0000-0000-000000000047"}
+    label: "Cancel kept the team"
+
+# 4. The removed member finds out
+- tapOn: "Account"
+- scrollUntilVisible:
+    element: "Delete account"
+- tapOn: "Log out"
+- extendedWaitUntil:
+    visible:
+      id: "account-submit"
+    timeout: 20000
+- runFlow:
+    file: ../../subflows/login.yaml
+    env:
+      EMAIL: "kicked@e2e.test"
+      NAME: "Kicked Cook"
+- retry:
+    maxRetries: 5
+    commands:
+      - tapOn: "Team"
+      - extendedWaitUntil:
+          visible: "The culinary team"
+          timeout: 4000
+- assertVisible:
+    id: "team-title"
+    text: "Remove Team"
+- assertVisible: "Members: 3"
+- assertNotVisible: ".*Removed Cook.*"
+- assertNotVisible:
+    id: "team-member-remove"
+- tapOn: "Recipes"
+- extendedWaitUntil:
+    visible: "Remove Host Pie"
+    timeout: 20000
+- retry:
+    maxRetries: 10
+    commands:
+      - waitForAnimationToEnd:
+          timeout: 1000
+      - runScript: ../../scripts/probe-device-recipes.js
+      - assertTrue:
+          condition: ${output.deviceTeamNames === "Remove Host Pie"}
+          label: "Remove Host Pie is on the device"
+- runScript:
+    file: ../../scripts/as-user.js
+    env:
+      EMAIL: "rmhost@e2e.test"
+      FN: "remove-member"
+      BODY: '{"user_id": "e2e00000-0000-0000-0000-000000000050"}'
+- assertTrue:
+    condition: ${output.asUserStatus >= 200 && output.asUserStatus < 300}
+    label: "The host removed kicked@"
+- runScript:
+    file: ../../scripts/probe-team.js
+    env:
+      TEAM: ""
+      USER: "e2e00000-0000-0000-0000-000000000050"
+- assertTrue:
+    condition: ${!output.teamExists}
+    label: "kicked@ is in no team on the server"
+- retry:
+    maxRetries: 5
+    commands:
+      - tapOn: "Team"
+      - extendedWaitUntil:
+          visible: "The culinary team"
+          timeout: 4000
+- tapOn:
+    id: "team-refresh"
+- extendedWaitUntil:
+    visible: "The team was deleted or you were removed from it\\."
+    timeout: 15000
+- assertNotVisible: "The culinary team"
+- assertVisible:
+    text: "Account"
+    selected: true
+- scrollUntilVisible:
+    element:
+      id: "setting-collaborativeTeam"
+- assertVisible:
+    id: "setting-collaborativeTeam"
+    checked: false
+    enabled: true
+- tapOn: "Recipes"
+- extendedWaitUntil:
+    visible: "Create my first recipe"
+    timeout: 10000
+- assertNotVisible: "Remove Host Pie"
+- retry:
+    maxRetries: 10
+    commands:
+      - waitForAnimationToEnd:
+          timeout: 1000
+      - runScript: ../../scripts/probe-device-recipes.js
+      - assertTrue:
+          condition: ${output.deviceTeamRecipeCount === 0 && output.deviceRecipeCount === 0}
+          label: "Remove Host Pie is gone from the device"

@@ -1,0 +1,59 @@
+# Creates a recipe with only the required fields: a title, prep time (40),
+# servings (6), the given meal, difficulty (Easy), one ingredient ("Salt")
+# and one step ("Mix"). Starts on an open "new recipe" form, lands on the
+# recipes screen.
+#
+# env: NAME, the title. MEAL, the meal as shown ("Breakfast", "Lunch",
+# "Dinner" or "Dessert")
+appId: com.matamim.app.e2e
+---
+- tapOn:
+    id: "recipe-title"
+- inputText: ${NAME}
+- hideKeyboard
+- tapOn:
+    id: "property-prepTime"
+- tapOn: "40"
+- waitForAnimationToEnd
+- tapOn: "OK"
+- tapOn:
+    id: "property-servings"
+- tapOn: "6"
+- waitForAnimationToEnd
+- tapOn: "OK"
+- tapOn:
+    id: "property-meal"
+- tapOn: ${MEAL}
+# In edit mode the chosen meal is the property's own label
+- assertVisible:
+    id: "property-meal"
+    text: ${MEAL}
+- tapOn:
+    id: "property-difficulty"
+- tapOn: "Easy"
+- scrollUntilVisible:
+    element:
+      id: "add-ingredient"
+- tapOn:
+    id: "add-ingredient"
+- tapOn:
+    id: "ingredient-0-item"
+- inputText: "Salt"
+- hideKeyboard
+- scrollUntilVisible:
+    element:
+      id: "add-step"
+- tapOn:
+    id: "add-step"
+- tapOn:
+    id: "step-0"
+- inputText: "Mix"
+- hideKeyboard
+- tapOn:
+    id: "create-recipe"
+- extendedWaitUntil:
+    visible: ${NAME}
+    timeout: 10000
+- assertVisible:
+    text: "Recipes"
+    selected: true

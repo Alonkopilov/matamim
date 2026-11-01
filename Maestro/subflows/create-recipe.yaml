@@ -1,0 +1,59 @@
+# Fills every recipe field on an open "new recipe" form and creates it.
+# Lands on the recipes screen. Setup for flows that need a saved recipe, the
+# form itself is tested in flows/guest/create-recipe.yaml.
+#
+# env: NAME, the recipe's title
+appId: com.matamim.app.e2e
+---
+- tapOn:
+    id: "recipe-title"
+- inputText: ${NAME}
+- hideKeyboard
+- tapOn:
+    id: "property-prepTime"
+- tapOn: "40"
+- waitForAnimationToEnd
+- tapOn: "OK"
+- tapOn:
+    id: "property-servings"
+- tapOn: "6"
+- waitForAnimationToEnd
+- tapOn: "OK"
+- tapOn:
+    id: "property-meal"
+- tapOn: "Dinner"
+- tapOn:
+    id: "property-difficulty"
+- tapOn: "Medium"
+- scrollUntilVisible:
+    element:
+      id: "add-ingredient"
+- tapOn:
+    id: "add-ingredient"
+- tapOn:
+    id: "ingredient-0-amount"
+- inputText: "4"
+- tapOn:
+    id: "ingredient-0-unit"
+- inputText: "pcs"
+- tapOn:
+    id: "ingredient-0-item"
+- inputText: "Eggs"
+- hideKeyboard
+- scrollUntilVisible:
+    element:
+      id: "add-step"
+- tapOn:
+    id: "add-step"
+- tapOn:
+    id: "step-0"
+- inputText: "Cook"
+- hideKeyboard
+- tapOn:
+    id: "create-recipe"
+- extendedWaitUntil:
+    visible: ${NAME}
+    timeout: 10000
+- assertVisible:
+    text: "Recipes"
+    selected: true

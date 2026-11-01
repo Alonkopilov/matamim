@@ -1,0 +1,141 @@
+# A member's team is deleted under it, because its host left and no Premium
+# member was left to take over. The member finds out when it refreshes.
+#
+# Seed: solohost@ (premium) hosts Solo Team with Solo Pie. Its members are
+# solofree@ (free, "Free Member") and soloexpired@ (premium ended 10 days
+# ago, so not a Premium member). solofree@ uses the app, solohost@ leaves
+# through the probe.
+#
+# Checks:
+#   1. solofree@ sees Solo Team with 3 members and Solo Pie, on the device too
+#   2. solohost@ leaves: the server deletes the team (outcome deleted), with
+#      no members left
+#   3. solofree@'s screen still shows the team until it refreshes. The refresh
+#      button then says the team was deleted or it was removed, sends it to
+#      Account with Shared team off and unlocked, and the Team tab locked.
+#      Solo Pie is gone from the recipes and from the device
+appId: com.matamim.app.e2e
+name: Team - the team is deleted under a member
+tags:
+  - team
+---
+- launchApp:
+    clearState: true
+- extendedWaitUntil:
+    visible: "Create my first recipe"
+    timeout: 20000
+
+# 1. The member's team
+- runFlow:
+    file: ../../subflows/login.yaml
+    env:
+      EMAIL: "solofree@e2e.test"
+      NAME: "Free Member"
+- retry:
+    maxRetries: 5
+    commands:
+      - tapOn: "Team"
+      - extendedWaitUntil:
+          visible: "The culinary team"
+          timeout: 4000
+- assertVisible:
+    id: "team-title"
+    text: "Solo Team"
+- assertVisible: "Members: 3"
+- tapOn: "Recipes"
+- extendedWaitUntil:
+    visible: "Solo Pie"
+    timeout: 20000
+- retry:
+    maxRetries: 10
+    commands:
+      - waitForAnimationToEnd:
+          timeout: 1000
+      - runScript: ../../scripts/probe-device-recipes.js
+      - assertTrue:
+          condition: ${output.deviceTeamNames === "Solo Pie"}
+          label: "Solo Pie is on the device"
+
+# 2. The host leaves, nobody is left to manage the team
+- runScript:
+    file: ../../scripts/as-user.js
+    env:
+      EMAIL: "solohost@e2e.test"
+      FN: "leave-team"
+      BODY: '{"team_id": "e2e7ea00-0000-0000-0000-000000000044"}'
+- assertTrue:
+    condition: ${output.asUserStatus >= 200 && output.asUserStatus < 300 && output.leaveOutcome === "deleted"}
+    label: "The team was deleted, no Premium member was left"
+- runScript:
+    file: ../../scripts/probe-team.js
+    env:
+      TEAM: "e2e7ea00-0000-0000-0000-000000000044"
+      USER: ""
+- assertTrue:
+    condition: ${!output.teamExists}
+    label: "Solo Team is gone from the server"
+- runScript:
+    file: ../../scripts/probe-team.js
+    env:
+      TEAM: ""
+      USER: "e2e00000-0000-0000-0000-000000000045"
+- assertTrue:
+    condition: ${!output.teamExists}
+    label: "solofree@ is in no team on the server"
+
+- runScript:
+    file: ../../scripts/probe-team.js
+    env:
+      TEAM: ""
+      USER: "e2e00000-0000-0000-0000-000000000046"
+- assertTrue:
+    condition: ${!output.teamExists}
+    label: "soloexpired@ is in no team either, nobody is left"
+
+# 3. The member refreshes the team screen
+- retry:
+    maxRetries: 5
+    commands:
+      - tapOn: "Team"
+      - extendedWaitUntil:
+          visible: "The culinary team"
+          timeout: 4000
+- assertVisible:
+    id: "team-title"
+    text: "Solo Team"
+- tapOn:
+    id: "team-refresh"
+- extendedWaitUntil:
+    visible: "The team was deleted or you were removed from it\\."
+    timeout: 15000
+- assertNotVisible: "The culinary team"
+- assertVisible:
+    text: "Account"
+    selected: true
+- scrollUntilVisible:
+    element:
+      id: "setting-collaborativeTeam"
+- assertVisible:
+    id: "setting-collaborativeTeam"
+    checked: false
+    enabled: true
+- tapOn: "Team"
+- assertVisible: "Join or create a team from the Account tab first"
+- assertNotVisible: "The culinary team"
+- assertVisible:
+    text: "Account"
+    selected: true
+- tapOn: "Recipes"
+- extendedWaitUntil:
+    visible: "Create my first recipe"
+    timeout: 10000
+- assertNotVisible: "Solo Pie"
+- retry:
+    maxRetries: 10
+    commands:
+      - waitForAnimationToEnd:
+          timeout: 1000
+      - runScript: ../../scripts/probe-device-recipes.js
+      - assertTrue:
+          condition: ${output.deviceTeamRecipeCount === 0 && output.deviceRecipeCount === 0}
+          label: "Solo Pie is gone from the device"

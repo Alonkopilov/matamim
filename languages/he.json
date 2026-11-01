@@ -1,0 +1,10 @@
+{
+  "ios": {
+    "CFBundleDisplayName": "מטעמים",
+    "NSPhotoLibraryUsageDescription": "האפליקציה ניגשת לתמונות שלך כדי לאפשר לך להעלות תמונות למתכונים ולייבא מתכונים מתמונות.",
+    "NSCameraUsageDescription": "המצלמה משמשת רק כשבוחרים לצלם מתכון כדי לייבא אותו."
+  },
+  "android": {
+    "app_name": "מטעמים"
+  }
+}

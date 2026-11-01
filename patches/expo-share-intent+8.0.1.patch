@@ -1,0 +1,22 @@
+diff --git a/node_modules/expo-share-intent/android/src/main/java/expo/modules/shareintent/ExpoShareIntentModule.kt b/node_modules/expo-share-intent/android/src/main/java/expo/modules/shareintent/ExpoShareIntentModule.kt
+index ff5b100..469c030 100644
+--- a/node_modules/expo-share-intent/android/src/main/java/expo/modules/shareintent/ExpoShareIntentModule.kt
++++ b/node_modules/expo-share-intent/android/src/main/java/expo/modules/shareintent/ExpoShareIntentModule.kt
+@@ -111,7 +111,17 @@ class ExpoShareIntentModule : Module() {
+             )
+         }
+ 
++        // Any app can send a share, so a URI that can't be read (no rows, no
++        // permission, no type) must not crash the app: it's reported instead
+         fun handleShareIntent(intent: Intent) {
++            try {
++                handleShareIntentUnsafe(intent)
++            } catch (e: Exception) {
++                notifyError("Cannot read the shared content: " + e.javaClass.simpleName)
++            }
++        }
++
++        private fun handleShareIntentUnsafe(intent: Intent) {
+             val activity = instance?.currentActivity
+             if (activity != null && !activity.isTaskRoot) {
+                 val newIntent = Intent(intent).apply {

@@ -1,0 +1,82 @@
+diff --git a/node_modules/@legendapp/state/sync-plugins/crud.js b/node_modules/@legendapp/state/sync-plugins/crud.js
+index ba86ca3..433e555 100644
+--- a/node_modules/@legendapp/state/sync-plugins/crud.js
++++ b/node_modules/@legendapp/state/sync-plugins/crud.js
+@@ -291,6 +291,19 @@ function syncedCrud(props) {
+     const updateFullValues = /* @__PURE__ */ new Map();
+     const deletes = /* @__PURE__ */ new Set();
+     const changesById = /* @__PURE__ */ new Map();
++    const allChangesById = /* @__PURE__ */ new Map();
++    const addChangeForId = (id, change) => {
++      const changesForId = allChangesById.get(id) || [];
++      if (change && !changesForId.includes(change)) {
++        changesForId.push(change);
++      }
++      allChangesById.set(id, changesForId);
++    };
++    const setChangeById = changesById.set.bind(changesById);
++    changesById.set = (id, change) => {
++      addChangeForId(id, change);
++      return setChangeById(id, change);
++    };
+     const getUpdateValue = (itemValue, prev) => {
+       return updatePartial ? Object.assign(
+         sync.diffObjects(
+@@ -322,6 +335,7 @@ function syncedCrud(props) {
+     const addCreate = (id, itemValue, change) => {
+       const pendingCreate = beginPendingCreate(id, change);
+       changesById.set(id, pendingCreate.change);
++      addChangeForId(id, change);
+       creates.set(id, itemValue);
+     };
+     changes.forEach((change) => {
+@@ -518,7 +532,7 @@ function syncedCrud(props) {
+             update({
+               value: value2,
+               mode: "merge",
+-              changes: [change]
++              changes: allChangesById.get(itemKey) || [change]
+             });
+           }
+         }
+diff --git a/node_modules/@legendapp/state/sync-plugins/crud.mjs b/node_modules/@legendapp/state/sync-plugins/crud.mjs
+index ad2afd2..da3104e 100644
+--- a/node_modules/@legendapp/state/sync-plugins/crud.mjs
++++ b/node_modules/@legendapp/state/sync-plugins/crud.mjs
+@@ -289,6 +289,19 @@ function syncedCrud(props) {
+     const updateFullValues = /* @__PURE__ */ new Map();
+     const deletes = /* @__PURE__ */ new Set();
+     const changesById = /* @__PURE__ */ new Map();
++    const allChangesById = /* @__PURE__ */ new Map();
++    const addChangeForId = (id, change) => {
++      const changesForId = allChangesById.get(id) || [];
++      if (change && !changesForId.includes(change)) {
++        changesForId.push(change);
++      }
++      allChangesById.set(id, changesForId);
++    };
++    const setChangeById = changesById.set.bind(changesById);
++    changesById.set = (id, change) => {
++      addChangeForId(id, change);
++      return setChangeById(id, change);
++    };
+     const getUpdateValue = (itemValue, prev) => {
+       return updatePartial ? Object.assign(
+         diffObjects(
+@@ -320,6 +333,7 @@ function syncedCrud(props) {
+     const addCreate = (id, itemValue, change) => {
+       const pendingCreate = beginPendingCreate(id, change);
+       changesById.set(id, pendingCreate.change);
++      addChangeForId(id, change);
+       creates.set(id, itemValue);
+     };
+     changes.forEach((change) => {
+@@ -516,7 +530,7 @@ function syncedCrud(props) {
+             update({
+               value: value2,
+               mode: "merge",
+-              changes: [change]
++              changes: allChangesById.get(itemKey) || [change]
+             });
+           }
+         }

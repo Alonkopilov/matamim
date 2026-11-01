@@ -1,0 +1,203 @@
+# A premium account turns cloud sync on: the recipes it already has upload,
+# and so does each new one, right away.
+#
+# Seed: upload@ is premium, with cloud sync off and nothing in the cloud. The
+# photo picked is the all-magenta one in the device's gallery.
+#
+# Checks:
+#   1. With cloud sync off, recipes (one with a photo) are saved on the
+#      device only, with the gray chip, and nothing is sent to the cloud
+#   2. Premium turns it on without any dialog, and the server saves it
+#   3. Both recipes upload, the photo to Storage, and the cards turn orange
+#   4. A recipe created now, with a photo, uploads right away
+#   5. After a relaunch, cloud sync is still on and nothing is duplicated
+appId: com.matamim.app.e2e
+name: Premium - turning cloud sync on uploads recipes
+tags:
+  - premium
+---
+- runScript:
+    file: ../../scripts/revenuecat-grant.js
+    env:
+      USER: "e2e00000-0000-0000-0000-000000000013"
+- runScript: ../../scripts/probe-now.js
+- evalScript: ${output.flowStart = output.since}
+- launchApp:
+    clearState: true
+- extendedWaitUntil:
+    visible: "Create my first recipe"
+    timeout: 20000
+- runFlow:
+    file: ../../subflows/login.yaml
+    env:
+      EMAIL: "upload@e2e.test"
+      NAME: "Upload Cook"
+- assertVisible:
+    id: "setting-cloudSync"
+    checked: false
+
+# 1. Off: kept on the device
+- tapOn:
+    id: "tab-create"
+- tapOn: "New recipe"
+- runFlow: ../../subflows/pick-photo.yaml
+- runFlow:
+    file: ../../subflows/create-meal-recipe.yaml
+    env:
+      NAME: "Pantry Soup"
+      MEAL: "Dinner"
+- tapOn:
+    id: "tab-create"
+- tapOn: "New recipe"
+- runFlow:
+    file: ../../subflows/create-meal-recipe.yaml
+    env:
+      NAME: "Pantry Bread"
+      MEAL: "Breakfast"
+- runFlow:
+    file: ../../subflows/assert-card-cloud.yaml
+    env:
+      NAME: "Pantry Soup"
+      CHIP: "Saved only on this device"
+- runFlow:
+    file: ../../subflows/assert-card-cloud.yaml
+    env:
+      NAME: "Pantry Bread"
+      CHIP: "Saved only on this device"
+- runScript: ../../scripts/probe-device-recipes.js
+- assertTrue:
+    condition: ${output.deviceRecipeNames === "Pantry Bread|Pantry Soup" && output.deviceImages["Pantry Soup"].indexOf("local:") === 0 && output.devicePending >= 2}
+    label: "Both on the device, the photo as a file on the device, waiting to upload"
+- runScript:
+    file: ../../scripts/probe-cloud-requests.js
+    env:
+      SINCE: ${output.flowStart}
+      PATHS: "/rest/v1/recipes,/storage/v1"
+- assertTrue:
+    condition: ${output.cloudRequests === 0}
+    label: "Nothing was sent to the cloud's recipes or images"
+- runScript:
+    file: ../../scripts/probe-cloud.js
+    env:
+      USER: "e2e00000-0000-0000-0000-000000000013"
+- assertTrue:
+    condition: ${output.cloudRowCount === 0 && output.cloudImages === "" && output.cloudSetting === "false"}
+    label: "Nothing in the cloud"
+
+# 2. On, without a dialog
+- tapOn: "Account"
+- tapOn:
+    id: "setting-cloudSync"
+- assertVisible:
+    id: "setting-cloudSync"
+    checked: true
+- assertNotVisible: "Cloud sync is part of Premium"
+- assertNotVisible:
+    id: "alert-cancel"
+- retry:
+    maxRetries: 10
+    commands:
+      - runScript:
+          file: ../../scripts/probe-cloud.js
+          env:
+            USER: "e2e00000-0000-0000-0000-000000000013"
+      - assertTrue:
+          condition: ${output.cloudSetting === "true" && output.cloudOffSeconds === -1}
+          label: "Saved on the server"
+# Again once the server has it, in case a dialog came up late
+- assertNotVisible:
+    id: "alert-cancel"
+
+# 3. The existing recipes upload
+- tapOn: "Recipes"
+- runFlow:
+    file: ../../subflows/assert-card-cloud.yaml
+    env:
+      NAME: "Pantry Soup"
+      CHIP: "Saved in the cloud"
+- runFlow:
+    file: ../../subflows/assert-card-cloud.yaml
+    env:
+      NAME: "Pantry Bread"
+      CHIP: "Saved in the cloud"
+- retry:
+    maxRetries: 10
+    commands:
+      - runScript:
+          file: ../../scripts/probe-cloud.js
+          env:
+            USER: "e2e00000-0000-0000-0000-000000000013"
+      - assertTrue:
+          condition: ${output.cloudNames === "Pantry Bread|Pantry Soup" && output.cloudImages !== "" && output.cloudRecipe["Pantry Soup"].image === output.cloudImages}
+          label: "Both recipes in the cloud, the photo in Storage"
+- assertTrue:
+    condition: ${output.cloudRowCount === 2 && output.cloudImages.indexOf("e2e00000-0000-0000-0000-000000000013/") === 0 && output.cloudRecipe["Pantry Soup"].category === "dinner" && output.cloudRecipe["Pantry Soup"].firstIngredient === "Salt" && output.cloudRecipe["Pantry Bread"].category === "breakfast" && output.cloudRecipe["Pantry Bread"].image === ""}
+    label: "Uploaded as created"
+- runScript: ../../scripts/probe-device-recipes.js
+- assertTrue:
+    condition: ${output.deviceImages["Pantry Soup"] === output.cloudImages && output.devicePending === 0}
+    label: "The device now points to the photo in Storage, nothing left to upload"
+- runFlow:
+    file: ../../subflows/find-card.yaml
+    env:
+      NAME: "Pantry Soup"
+- retry:
+    maxRetries: 10
+    commands:
+      - runScript:
+          file: ../../scripts/probe-screen-color.js
+          env:
+            RGB: "ff00ff"
+      - assertTrue:
+          condition: ${output.screenColorShare > 0.02}
+          label: "The photo is shown"
+
+# 4. A new recipe uploads right away
+- tapOn:
+    id: "tab-create"
+- tapOn: "New recipe"
+- runFlow: ../../subflows/pick-photo.yaml
+- runFlow:
+    file: ../../subflows/create-meal-recipe.yaml
+    env:
+      NAME: "Quick Salad"
+      MEAL: "Lunch"
+- runFlow:
+    file: ../../subflows/assert-card-cloud.yaml
+    env:
+      NAME: "Quick Salad"
+      CHIP: "Saved in the cloud"
+- runScript:
+    file: ../../scripts/probe-cloud.js
+    env:
+      USER: "e2e00000-0000-0000-0000-000000000013"
+- assertTrue:
+    condition: ${output.cloudNames === "Pantry Bread|Pantry Soup|Quick Salad" && output.cloudRecipe["Quick Salad"].category === "lunch" && output.cloudImages.split("|").length === 2 && output.cloudRecipe["Quick Salad"].image !== "" && output.cloudRecipe["Quick Salad"].image !== output.cloudRecipe["Pantry Soup"].image && output.cloudImages.split("|").indexOf(output.cloudRecipe["Quick Salad"].image) !== -1}
+    label: "In the cloud right away, with its photo"
+
+# 5. Kept after a relaunch
+- stopApp
+- launchApp
+- extendedWaitUntil:
+    visible: "Hello, Upload Cook!"
+    timeout: 20000
+- runFlow:
+    file: ../../subflows/assert-card-cloud.yaml
+    env:
+      NAME: "Quick Salad"
+      CHIP: "Saved in the cloud"
+- tapOn: "Account"
+- assertVisible:
+    id: "setting-cloudSync"
+    checked: true
+- runScript: ../../scripts/probe-device-recipes.js
+- assertTrue:
+    condition: ${output.deviceRecipeCount === 3 && output.devicePending === 0}
+    label: "Three recipes on the device, nothing left to upload"
+- runScript:
+    file: ../../scripts/probe-cloud.js
+    env:
+      USER: "e2e00000-0000-0000-0000-000000000013"
+- assertTrue:
+    condition: ${output.cloudRowCount === 3 && output.cloudImages.split("|").length === 2}
+    label: "Three rows and two photos in the cloud, no duplicates"

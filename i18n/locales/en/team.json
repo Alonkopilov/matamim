@@ -1,0 +1,48 @@
+{
+  "removed": "The team was deleted or you were removed from it.",
+  "leftOutcomes": {
+    "left": "You left the team.",
+    "transferred": "You left the team. Another member manages it now.",
+    "deleted": "The team was deleted since no Premium member was left to manage it."
+  },
+  "defaultTitle": "New team",
+  "header": {
+    "label": "The culinary team",
+    "titlePlaceholder": "Team name",
+    "memberCount": "Members: {{amount}}"
+  },
+  "renamed": "Team name updated",
+  "leave": {
+    "deleteTitle": "Delete team",
+    "deleteMessage": "Are you sure you want to delete the team? All members will leave it, but everyone's recipes will stay safe.",
+    "leaveTitle": "Leave team",
+    "leaveMessage": "Are you sure you want to leave the team? You won't see your teammates' recipes anymore, but your own recipes will stay safe.",
+    "transferMessage": "Are you sure you want to leave the team? The Premium member who joined first will manage it, and everyone's recipes will stay safe."
+  },
+  "localOnly": {
+    "message": "You can see the team's recipes, but your recipes are saved only on this device and your teammates can't see them.",
+    "enableCloudSync": "Turn on cloud sync",
+    "upgrade": "Upgrade to Premium"
+  },
+  "members": {
+    "title": "Members:",
+    "host": "Head chef",
+    "removeTitle": "Remove member",
+    "removeMessage": "Remove {{name}} from the team? They won't see the team's recipes anymore, and their own recipes will stay safe.",
+    "removed": "{{name}} was removed from the team."
+  },
+  "invite": {
+    "title": "Temporary invite code",
+    "description": "Send this code to the person you want to invite. To join, they need to enter it on the join team screen:",
+    "share": "Share",
+    "expiry": "The code is valid for about 5 minutes.",
+    "whereToJoin": "<bold>Where's the join team screen?</bold> - It's on the account screen, behind the button at the top left.",
+    "shareTitle": "Share team invite code",
+    "shareMessage": "*Invite code -* Enter the code {{code}} to join my culinary team.\n\n*How do I do it in the app? -* To join the team, go to the account screen and tap the button at the top left.\n\n*Who am I and what is this message? -* This message was sent by a user of *\"Matamim\"*, an app for easily creating a personal or shared recipe book."
+  },
+  "join": {
+    "title": "Enter team code",
+    "codePrompt": "Enter the 8-digit code from the team's host",
+    "description": "To join a culinary team, ask the team's host to send you an 8-digit join code."
+  }
+}

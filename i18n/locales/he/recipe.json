@@ -1,0 +1,77 @@
+{
+  "titlePlaceholder": "כותרת",
+  "descriptionPlaceholder": "תיאור",
+  "ownedBy": "מתכון של {{name}}",
+  "properties": {
+    "prepTime": "דקות",
+    "servings": "יחידות",
+    "meal": "ארוחה",
+    "difficulty": "רמת קושי",
+    "placeholder": "תוכן"
+  },
+  "ingredients": {
+    "title": "מרכיבים",
+    "amountPlaceholder": "כמות",
+    "unitPlaceholder": "מידה",
+    "itemPlaceholder": "פריט"
+  },
+  "instructions": {
+    "title": "שלבי הכנה"
+  },
+  "keyboard": {
+    "next": "עבור הלאה"
+  },
+  "new": {
+    "create": "יצירה",
+    "localOnlyNotice": "המתכון יישמר רק במכשיר שלך - חברי הקבוצה לא יראו אותו.",
+    "aiImport": "ייבוא AI",
+    "premiumOnly": "פרימיום בלבד",
+    "freeImports": "{{count}} חינם"
+  },
+  "validation": {
+    "title": "חסרים פרטים במתכון",
+    "missingTitle": "חסרה כותרת",
+    "missingPrepTime": "חסר זמן הכנה",
+    "missingServings": "חסר מספר יחידות/מנות",
+    "missingMeal": "חסר סוג ארוחה",
+    "missingDifficulty": "חסרה רמת קושי",
+    "missingIngredients": "חסרים מרכיבים",
+    "ingredientMissingName": "לאחד המרכיבים חסר שם",
+    "missingInstructions": "חסרים שלבי הכנה"
+  },
+  "toasts": {
+    "created": "מתכון נוצר בהצלחה!",
+    "saved": "המתכון נשמר!",
+    "deleted": "מתכון נמחק בהצלחה!",
+    "imageUploadFailed": "העלאת התמונה נכשלה, התמונה נשמרה מקומית",
+    "imageSaveFailed": "לא הצלחנו להוסיף את התמונה, נסו תמונה אחרת"
+  },
+  "deleteConfirm": {
+    "title": "מחיקת מתכון",
+    "message": "את/ה בטוח/ה? המתכון יימחק לצמיתות."
+  },
+  "discardChanges": {
+    "title": "לבטל את השינויים?",
+    "message": "השינויים במתכון לא נשמרו.",
+    "keepEditing": "המשך עריכה",
+    "discard": "ביטול השינויים"
+  },
+  "imagePermission": {
+    "title": "נדרשת הרשאה",
+    "message": "כדי להוסיף תמונה למתכון, יש לאשר לאפליקציה גישה לתמונות."
+  },
+  "actions": {
+    "back": "חזרה",
+    "edit": "עריכה",
+    "preview": "תצוגה",
+    "delete": "מחיקה"
+  },
+  "cookMode": {
+    "start": "מתחילים לבשל",
+    "stepOf": "שלב {{current}} מתוך {{total}}",
+    "previous": "הקודם",
+    "next": "הבא",
+    "done": "סיימתי",
+    "close": "סגירה"
+  }
+}

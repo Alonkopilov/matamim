@@ -1,0 +1,234 @@
+# What a guest typed into the new recipe form isn't lost by moving around the
+# app, and saved recipes show without a connection.
+#
+# Checks:
+#   7. A draft survives switching to other tabs and back
+#   9. A relaunch with no connection still shows the saved recipes
+#   8. A draft survives opening an existing recipe and coming back
+#  10. Creating a restored draft clears it: the next new recipe is empty
+appId: com.matamim.app.e2e
+name: Guest - recipe drafts and offline recipes
+tags:
+  - guest
+onFlowComplete:
+  # Reconnects even when a check fails while offline
+  - setAirplaneMode: disabled
+  - runScript:
+      file: ../../scripts/probe-network.js
+      env:
+        STATE: "on"
+---
+- launchApp:
+    clearState: true
+- extendedWaitUntil:
+    visible: "Create my first recipe"
+    timeout: 20000
+
+# Setup: a saved recipe, for checks 8 and 9
+- tapOn: "Create my first recipe"
+- runFlow:
+    file: ../../subflows/create-recipe.yaml
+    env:
+      NAME: "E2E Saved Recipe"
+
+# 7. A draft, then other tabs, then back through the create menu
+- tapOn:
+    id: "tab-create"
+- tapOn: "New recipe"
+- tapOn:
+    id: "recipe-title"
+- inputText: "Tab draft title"
+- tapOn:
+    id: "recipe-description"
+- inputText: "Tab draft description"
+- hideKeyboard
+- tapOn:
+    id: "property-meal"
+- tapOn: "Breakfast"
+- scrollUntilVisible:
+    element:
+      id: "add-ingredient"
+- tapOn:
+    id: "add-ingredient"
+- tapOn:
+    id: "ingredient-0-item"
+- inputText: "Tab draft item"
+- hideKeyboard
+# Straight from the form to another tab
+- tapOn: "Premium"
+- assertVisible:
+    text: "Premium"
+    selected: true
+- tapOn:
+    id: "tab-create"
+- tapOn: "New recipe"
+- assertVisible:
+    id: "recipe-title"
+    text: "Tab draft title"
+# And through the recipes screen
+- tapOn: "Back"
+- assertVisible:
+    text: "Recipes"
+    selected: true
+- tapOn: "Premium"
+- assertVisible:
+    text: "Premium"
+    selected: true
+- tapOn: "Account"
+- assertVisible:
+    text: "Account"
+    selected: true
+- tapOn:
+    id: "tab-create"
+- tapOn: "New recipe"
+- assertVisible:
+    id: "recipe-title"
+    text: "Tab draft title"
+- assertVisible:
+    id: "recipe-description"
+    text: "Tab draft description"
+- assertVisible:
+    id: "property-meal"
+    text: "Breakfast"
+- scrollUntilVisible:
+    element:
+      id: "ingredient-0-item"
+      text: "Tab draft item"
+
+# 9. Offline relaunch: no internet, and no route to local Supabase either.
+#    The probe turns off Wi-Fi, mobile data and adb reverse, since airplane
+#    mode alone leaves the emulator's Wi-Fi on.
+- tapOn: "Back"
+- runScript:
+    file: ../../scripts/probe-network.js
+    env:
+      STATE: "off"
+- setAirplaneMode: enabled
+- runScript: ../../scripts/probe-online.js
+- assertTrue:
+    condition: ${output.online === false}
+    label: "The device can't reach the internet"
+- stopApp
+- launchApp
+- extendedWaitUntil:
+    visible: "E2E Saved Recipe"
+    timeout: 20000
+- assertNotVisible: "Create my first recipe"
+- tapOn: "E2E Saved Recipe"
+- assertVisible:
+    id: "property-meal-value"
+    text: "Dinner"
+- assertVisible:
+    id: "property-difficulty-value"
+    text: "Medium"
+- assertVisible: "4 pcs Eggs"
+- tapOn: "Back"
+- setAirplaneMode: disabled
+- runScript:
+    file: ../../scripts/probe-network.js
+    env:
+      STATE: "on"
+
+# 8. A draft, then an existing recipe, then back to the form
+- tapOn:
+    id: "tab-create"
+- tapOn: "New recipe"
+- tapOn:
+    id: "recipe-title"
+- inputText: "Recipe draft title"
+- hideKeyboard
+- tapOn: "Back"
+- tapOn: "E2E Saved Recipe"
+- assertVisible:
+    id: "property-meal-value"
+    text: "Dinner"
+- tapOn:
+    id: "tab-create"
+- tapOn: "New recipe"
+- assertVisible:
+    id: "recipe-title"
+    text: "Recipe draft title"
+# 10. Finishing the restored draft and creating it leaves an empty form. The
+#     title is already there, so the rest is filled by hand.
+- tapOn:
+    id: "property-prepTime"
+- tapOn: "40"
+- waitForAnimationToEnd
+- tapOn: "OK"
+- tapOn:
+    id: "property-servings"
+- tapOn: "6"
+- waitForAnimationToEnd
+- tapOn: "OK"
+- tapOn:
+    id: "property-meal"
+- tapOn: "Dinner"
+- tapOn:
+    id: "property-difficulty"
+- tapOn: "Medium"
+- scrollUntilVisible:
+    element:
+      id: "add-ingredient"
+- tapOn:
+    id: "add-ingredient"
+- tapOn:
+    id: "ingredient-0-item"
+- inputText: "Eggs"
+- hideKeyboard
+- scrollUntilVisible:
+    element:
+      id: "add-step"
+- tapOn:
+    id: "add-step"
+- tapOn:
+    id: "step-0"
+- inputText: "Cook"
+- hideKeyboard
+- tapOn:
+    id: "create-recipe"
+- extendedWaitUntil:
+    visible: "Recipe created!"
+    timeout: 10000
+- assertVisible: "Recipe draft title"
+- tapOn:
+    id: "tab-create"
+- tapOn: "New recipe"
+- assertVisible:
+    id: "recipe-title"
+    text: ""
+- assertVisible:
+    id: "recipe-description"
+    text: ""
+# The rows are below the fold, so they're scrolled to before checking they're
+# not there
+- scrollUntilVisible:
+    element:
+      id: "add-ingredient"
+- assertNotVisible:
+    id: "ingredient-0-item"
+- scrollUntilVisible:
+    element:
+      id: "add-step"
+- assertNotVisible:
+    id: "step-0"
+# Still empty after opening a recipe and coming back
+- tapOn: "Back"
+- tapOn: "E2E Saved Recipe"
+- tapOn:
+    id: "tab-create"
+- tapOn: "New recipe"
+- assertVisible:
+    id: "recipe-title"
+    text: ""
+# The rows are below the fold, so they're scrolled to before checking they're
+# not there
+- scrollUntilVisible:
+    element:
+      id: "add-ingredient"
+- assertNotVisible:
+    id: "ingredient-0-item"
+- scrollUntilVisible:
+    element:
+      id: "add-step"
+- assertNotVisible:
+    id: "step-0"

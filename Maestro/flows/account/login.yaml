@@ -1,0 +1,200 @@
+# A guest with a recipe logs in to an existing account.
+#
+# Checks:
+#   1. Empty fields are refused
+#   2. A wrong password and an unknown email are both refused with the same
+#      message, so it doesn't tell which emails have an account
+#   3. The right email and password log in, also with the spaces a keyboard
+#      adds around a suggested email: "Welcome back", and the Account tab
+#      shows the account
+#   4. The recipes screen greets the account, and the recipe made as a guest
+#      is still there, also after a relaunch. On the device it now belongs to
+#      the account: its user_id in the app's storage goes from "guest" to the
+#      account's id
+#   5. Nothing of the recipe is uploaded: cloud sync is off for the account
+#      (no recipe requests, no rows)
+appId: com.matamim.app.e2e
+name: Account - log in
+tags:
+  - account
+  - smoke
+---
+# The network window starts before launch, so every request counts
+- runScript: ../../scripts/probe-now.js
+- evalScript: ${output.flowStart = output.since}
+- launchApp:
+    clearState: true
+- extendedWaitUntil:
+    visible: "Create my first recipe"
+    timeout: 20000
+- tapOn: "Create my first recipe"
+- runFlow:
+    file: ../../subflows/create-recipe.yaml
+    env:
+      NAME: "E2E Guest Soup"
+- assertVisible: "Hello, Anonymous Chef!"
+# A guest's recipe, in the app's own storage
+- runScript: ../../scripts/probe-device-recipes.js
+- assertTrue:
+    condition: ${output.deviceRecipeNames === "E2E Guest Soup" && output.deviceRecipeOwners === "guest"}
+    label: "On the device, the recipe belongs to the guest"
+
+- tapOn: "Account"
+- assertVisible: "Forgot your password\\?"
+
+# 1. Empty: exactly these two problems
+- tapOn:
+    id: "account-submit"
+- assertVisible: "Email is required\\.\nPassword is required\\."
+- runScript:
+    file: ../../scripts/probe-cloud-requests.js
+    env:
+      SINCE: ${output.flowStart}
+      PATHS: "/auth/v1/token"
+- assertTrue:
+    condition: ${output.cloudRequests === 0}
+    label: "No login request for an empty form"
+
+# 2. A wrong password for an existing account
+- runFlow:
+    file: ../../subflows/replace-text.yaml
+    env:
+      ID: "account-email"
+      TEXT: "owner@e2e.test"
+- hideKeyboard
+- runFlow:
+    file: ../../subflows/replace-text.yaml
+    env:
+      ID: "account-password"
+      TEXT: "${E2E_PASSWORD}x"
+- hideKeyboard
+- tapOn:
+    id: "account-submit"
+- extendedWaitUntil:
+    visible: "Wrong email or password"
+    timeout: 10000
+- assertNotVisible: "Welcome back.*"
+- assertVisible:
+    id: "account-submit"
+# Retried, Kong logs a request once it's answered
+- retry:
+    maxRetries: 10
+    commands:
+      - runScript:
+          file: ../../scripts/probe-cloud-requests.js
+          env:
+            SINCE: ${output.flowStart}
+            PATHS: "/auth/v1/token"
+      - assertTrue:
+          condition: ${output.cloudRequests === 1}
+          label: "The wrong password reached Auth"
+
+# 2. An email with no account, with that account's real password. Same
+#    message as a wrong password.
+- runFlow:
+    file: ../../subflows/replace-text.yaml
+    env:
+      ID: "account-email"
+      TEXT: "nobody@e2e.test"
+- hideKeyboard
+- runFlow:
+    file: ../../subflows/replace-text.yaml
+    env:
+      ID: "account-password"
+      TEXT: "${E2E_PASSWORD}"
+- hideKeyboard
+- tapOn:
+    id: "account-submit"
+# The message is still up from the last attempt, so it's checked once the
+# request count shows this one was answered
+# Retried, Kong logs a request once it's answered
+- retry:
+    maxRetries: 10
+    commands:
+      - runScript:
+          file: ../../scripts/probe-cloud-requests.js
+          env:
+            SINCE: ${output.flowStart}
+            PATHS: "/auth/v1/token"
+      - assertTrue:
+          condition: ${output.cloudRequests === 2}
+          label: "The unknown email reached Auth"
+# Sending clears the message and shows a spinner, so once Auth has answered,
+# this is the unknown email's own message
+- assertVisible: "Wrong email or password"
+- assertNotVisible: "Welcome back.*"
+- assertVisible:
+    id: "account-submit"
+
+# 3. The right account, with a space before and after the email
+- runFlow:
+    file: ../../subflows/replace-text.yaml
+    env:
+      ID: "account-email"
+      TEXT: " owner@e2e.test "
+- hideKeyboard
+- assertVisible:
+    id: "account-email"
+    text: " owner@e2e\\.test "
+- tapOn:
+    id: "account-submit"
+- extendedWaitUntil:
+    visible: "Welcome back E2E Owner!"
+    timeout: 10000
+- assertVisible:
+    text: "Account"
+    selected: true
+- assertVisible: "E2E Owner"
+- assertVisible: "owner@e2e\\.test"
+- assertVisible: "Change username"
+- assertNotVisible:
+    id: "account-submit"
+- assertNotVisible: "Wrong email or password"
+
+# 4. Greeted by name, with the guest's recipe
+- tapOn: "Recipes"
+- assertVisible: "Hello, E2E Owner!"
+- assertVisible: "E2E Guest Soup"
+- tapOn: "E2E Guest Soup"
+- assertVisible:
+    id: "property-meal-value"
+    text: "Dinner"
+- assertVisible: "4 pcs Eggs"
+# 4. Moved to the account in the app's own storage, not just still shown.
+#    Retried, it's moved once the login is handled.
+- retry:
+    maxRetries: 5
+    commands:
+      - runScript: ../../scripts/probe-device-recipes.js
+      - assertTrue:
+          condition: ${output.deviceRecipeNames === "E2E Guest Soup" && output.deviceRecipeOwners === "e2e00000-0000-0000-0000-000000000001"}
+          label: "On the device, the recipe now belongs to the account"
+
+# 4. Both kept after a relaunch
+- stopApp
+- launchApp
+- extendedWaitUntil:
+    visible: "Hello, E2E Owner!"
+    timeout: 20000
+- assertVisible: "E2E Guest Soup"
+- runScript: ../../scripts/probe-device-recipes.js
+- assertTrue:
+    condition: ${output.deviceRecipeNames === "E2E Guest Soup" && output.deviceRecipeOwners === "e2e00000-0000-0000-0000-000000000001"}
+    label: "After the relaunch, still the account's"
+
+# 5. The recipe stayed on the device, from before launch to the end
+- runScript:
+    file: ../../scripts/probe-cloud-requests.js
+    env:
+      SINCE: ${output.flowStart}
+      PATHS: "/rest/v1/recipes"
+- assertTrue:
+    condition: ${output.cloudRequests === 0}
+    label: "No recipe requests reached local Supabase"
+- runScript:
+    file: ../../scripts/probe-user-rows.js
+    env:
+      USER: "e2e00000-0000-0000-0000-000000000001"
+- assertTrue:
+    condition: ${output.rows_public_recipes === 0}
+    label: "No recipe rows for the account"

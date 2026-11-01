@@ -1,0 +1,140 @@
+# A team's host turns cloud sync off. Teammates keep seeing its recipes for
+# 30 days, until its cloud copy is deleted, then they're gone from the
+# teammates' devices too.
+#
+# Seed: sharer@ (premium, cloud sync on) hosts Sharing Team, with Shared Stew
+# in the cloud. teammate@ is a free member.
+#
+# Checks:
+#   1. The teammate sees Shared Stew
+#   2. Turning cloud sync off in a team asks first, saying the team stops
+#      getting changes and loses the recipes in 30 days
+#   3. Within the 30 days, the teammate still sees Shared Stew
+#   4. Once the cloud copy is deleted, the teammate's device drops Shared
+#      Stew, which it had kept from before, on the next launch
+appId: com.matamim.app.e2e
+name: Premium - team after cloud sync is turned off
+tags:
+  - premium
+---
+- runScript:
+    file: ../../scripts/revenuecat-grant.js
+    env:
+      USER: "e2e00000-0000-0000-0000-000000000018"
+- launchApp:
+    clearState: true
+- extendedWaitUntil:
+    visible: "Create my first recipe"
+    timeout: 20000
+
+# 1. The teammate sees it
+- runFlow:
+    file: ../../subflows/login.yaml
+    env:
+      EMAIL: "teammate@e2e.test"
+      NAME: "Teammate Cook"
+- tapOn: "Recipes"
+- extendedWaitUntil:
+    visible: "Shared Stew"
+    timeout: 15000
+- tapOn: "Account"
+# Clear of the floating tab bar
+- scrollUntilVisible:
+    element: "Delete account"
+- tapOn: "Log out"
+- extendedWaitUntil:
+    visible:
+      id: "account-submit"
+    timeout: 15000
+
+# 2. The host turns cloud sync off
+- runFlow:
+    file: ../../subflows/login.yaml
+    env:
+      EMAIL: "sharer@e2e.test"
+      NAME: "Sharer Cook"
+- assertVisible:
+    id: "setting-cloudSync"
+    checked: true
+- tapOn:
+    id: "setting-cloudSync"
+- extendedWaitUntil:
+    visible: "Turn off cloud sync"
+    timeout: 5000
+- assertVisible: "Your recipes stay on this device, but new recipes and changes won't reach your team\\. In 30 days your recipes will be deleted from the cloud and from your team, unless you turn cloud sync back on before then\\."
+- tapOn:
+    id: "alert-destructive"
+- assertVisible:
+    id: "setting-cloudSync"
+    checked: false
+- retry:
+    maxRetries: 10
+    commands:
+      - runScript:
+          file: ../../scripts/probe-cloud.js
+          env:
+            USER: "e2e00000-0000-0000-0000-000000000018"
+      - assertTrue:
+          condition: ${output.cloudSetting === "false" && output.cloudOffSeconds >= 0 && output.cloudNames === "Shared Stew"}
+          label: "Off on the server, Shared Stew still in the cloud"
+# Clear of the floating tab bar
+- scrollUntilVisible:
+    element: "Delete account"
+- tapOn: "Log out"
+- extendedWaitUntil:
+    visible: "(?s)Your recipes are saved only on this device.*"
+    timeout: 5000
+- tapOn:
+    id: "alert-destructive"
+- extendedWaitUntil:
+    visible:
+      id: "account-submit"
+    timeout: 20000
+
+# 3. Within the 30 days the teammate still sees it
+- runFlow:
+    file: ../../subflows/login.yaml
+    env:
+      EMAIL: "teammate@e2e.test"
+      NAME: "Teammate Cook"
+- tapOn: "Recipes"
+- extendedWaitUntil:
+    visible: "Shared Stew"
+    timeout: 15000
+- retry:
+    maxRetries: 5
+    commands:
+      - runScript: ../../scripts/probe-device-recipes.js
+      - assertTrue:
+          condition: ${output.deviceTeamNames === "Shared Stew"}
+          label: "Shared Stew is kept on the teammate's device"
+
+# 4. 31 days later the cloud copy is deleted
+- runScript:
+    file: ../../scripts/age-sync-off.js
+    env:
+      USER: "e2e00000-0000-0000-0000-000000000018"
+      DAYS: "31"
+- runScript: ../../scripts/purge-cloud.js
+- runScript:
+    file: ../../scripts/probe-cloud.js
+    env:
+      USER: "e2e00000-0000-0000-0000-000000000018"
+- assertTrue:
+    condition: ${output.cloudRowCount === 0 && output.cloudPurged}
+    label: "The host's cloud copy is deleted"
+- stopApp
+- launchApp
+- extendedWaitUntil:
+    visible: "Hello, Teammate Cook!"
+    timeout: 20000
+- retry:
+    maxRetries: 10
+    commands:
+      - runScript: ../../scripts/probe-device-recipes.js
+      - assertTrue:
+          condition: ${output.deviceTeamRecipeCount === 0}
+          label: "The teammate's device dropped Shared Stew"
+- scrollUntilVisible:
+    element: "That's all for now.*|Create my first recipe"
+- assertNotVisible: "Shared Stew"

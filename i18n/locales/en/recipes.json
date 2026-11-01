@@ -1,0 +1,16 @@
+{
+  "prepTime": "{{minutes}} min prep",
+  "listFooter": "That's all for now. Tap <highlight>Create</highlight> in the menu to add more",
+  "localBadge": "Device only",
+  "empty": {
+    "title": "Your cookbook is empty, but the kitchen is waiting 🍗",
+    "createFirst": "Create my first recipe"
+  },
+  "searchPlaceholder": "Search recipes...",
+  "prepTimeShort": "{{minutes}} min",
+  "noMatches": "No recipes match the selected filter",
+  "cloud": {
+    "saved": "Saved in the cloud",
+    "deviceOnly": "Saved only on this device"
+  }
+}

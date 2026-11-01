@@ -1,0 +1,63 @@
+{
+  "title": "Upgrade to <highlight>Matamim Premium</highlight>",
+  "description": "Your family's recipes, kept safe and shared with everyone.",
+  "features": {
+    "familySharing": {
+      "title": "One Premium for the whole family",
+      "description": "Only you pay. Your partner and family join your recipe book for free."
+    },
+    "cloudSync": {
+      "title": "Automatic cloud backup & sync",
+      "description": "Your recipes are always saved and secure, even if you switch or lose your device."
+    },
+    "urlImport": {
+      "title": "Import recipes from the web",
+      "description": "Paste a link to a recipe page and it lands in the app in one tap."
+    }
+  },
+  "packages": {
+    "monthly": {
+      "title": "Monthly",
+      "period": "month"
+    },
+    "annual": {
+      "title": "Yearly",
+      "period": "year"
+    },
+    "lifetime": {
+      "title": "Lifetime",
+      "period": ""
+    }
+  },
+  "offeringsUnavailable": "Payment options can't be loaded right now",
+  "whereMoneyGoes": {
+    "title": "Behind the scenes: where does your subscription go?",
+    "body": "Transparency matters to me: the app doesn't collect or sell your data. Automatic cloud sync and full backup of all your recipes require maintaining cloud databases, and their cost grows with the number of users and the traffic."
+  },
+  "autoRenewNotice": "Your subscription renews automatically at {{price}} per {{period}} unless you cancel it. You can cancel anytime in your settings.",
+  "oneTimeNotice": "One-time payment, no subscription.",
+  "purchase": {
+    "button": "Purchase",
+    "active": "Your subscription is active",
+    "success": "Welcome to Premium!",
+    "failedTitle": "Purchase failed"
+  },
+  "loginRequired": {
+    "title": "Login required",
+    "message": "Please log in to your account to buy Premium.",
+    "login": "Log in"
+  },
+  "restore": {
+    "button": "Restore purchase",
+    "success": "Your purchase was restored!",
+    "notFound": "No previous purchase found",
+    "failedTitle": "Couldn't restore your purchase",
+    "timeout": "This is taking longer than usual. If a purchase is found it will still be applied, so check again in a moment."
+  },
+  "legal": {
+    "terms": "Terms of Use",
+    "privacy": "Privacy Policy"
+  },
+  "cloudSyncDisabled": "No active Premium subscription, so cloud sync was turned off. Your recipes stay on this device, and their cloud copy will be deleted in 30 days.",
+  "bestValue": "Best value"
+}

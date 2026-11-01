@@ -1,0 +1,179 @@
+# A free account buys Premium, after a failed attempt.
+#
+# Checks:
+#   1. Purchase opens the store's sheet without asking to log in
+#   2. A failed purchase says so, and the account stays free: the Premium
+#      screen still offers Purchase, cloud sync stays locked, and neither the
+#      database (premium_entitlements, what upload policies check) nor
+#      RevenueCat has premium for it
+#   3. A successful purchase makes it premium: "Welcome to Premium!", the
+#      subscription shown as active, cloud sync no longer locked, premium in
+#      the database and in RevenueCat
+#   4. Premium survives a relaunch: the subscription shown as active, cloud
+#      sync still on and can be turned off and on again, premium in the
+#      database and in RevenueCat
+#
+# RevenueCat's Test Store keeps purchases per customer across runs, so the
+# account's customer is deleted from RevenueCat first (only seeded e2e
+# accounts can be, see scripts/e2e/probe.py).
+appId: com.matamim.app.e2e
+name: Free - buy Premium
+tags:
+  - free
+  - premium
+---
+- runScript:
+    file: ../../scripts/revenuecat-reset.js
+    env:
+      USER: "e2e00000-0000-0000-0000-000000000004"
+# Right after the reset, RevenueCat can still answer with the deleted
+# customer's purchase for a while
+- retry:
+    maxRetries: 10
+    commands:
+      - runScript:
+          file: ../../scripts/probe-premium.js
+          env:
+            USER: "e2e00000-0000-0000-0000-000000000004"
+      - assertTrue:
+          condition: ${!output.dbPremium && !output.revenuecatPremium}
+          label: "Free in the database and in RevenueCat at the start"
+
+- launchApp:
+    clearState: true
+- extendedWaitUntil:
+    visible: "Create my first recipe"
+    timeout: 20000
+- runFlow:
+    file: ../../subflows/login.yaml
+    env:
+      EMAIL: "buyer@e2e.test"
+      NAME: "Buyer Cook"
+
+# 1. The store's sheet, no login prompt
+- tapOn: "Recipes"
+- tapOn: "Premium"
+- scrollUntilVisible:
+    element: "Purchase"
+- tapOn: "Purchase"
+- extendedWaitUntil:
+    visible: "Test Store Purchase"
+    timeout: 15000
+- assertNotVisible: "Login required"
+
+# 2. A failed purchase
+- tapOn: "(?i)test failed purchase"
+- extendedWaitUntil:
+    visible: "Purchase failed"
+    timeout: 15000
+- assertNotVisible: "Welcome to Premium!"
+- tapOn:
+    id: "alert-cancel"
+- extendedWaitUntil:
+    notVisible: "Purchase failed"
+    timeout: 5000
+- assertVisible: "Purchase"
+- assertNotVisible: "Your subscription is active"
+# Cloud sync is still locked
+- tapOn: "Account"
+- tapOn:
+    id: "setting-cloudSync"
+- extendedWaitUntil:
+    visible: "Cloud sync is part of Premium"
+    timeout: 5000
+- tapOn:
+    id: "alert-cancel"
+- assertVisible:
+    id: "setting-cloudSync"
+    checked: false
+# The server never got premium either
+- runScript:
+    file: ../../scripts/probe-premium.js
+    env:
+      USER: "e2e00000-0000-0000-0000-000000000004"
+- assertTrue:
+    condition: ${!output.dbPremium && !output.revenuecatPremium}
+    label: "After the failed purchase, free in the database and in RevenueCat"
+
+# 3. A successful purchase. Through Recipes: on the Account tab, "Premium"
+#    is also the settings' badge
+- tapOn: "Recipes"
+- tapOn: "Premium"
+- scrollUntilVisible:
+    element: "Purchase"
+- tapOn: "Purchase"
+- extendedWaitUntil:
+    visible: "Test Store Purchase"
+    timeout: 15000
+# Not waiting for the screen to settle, which can take as long as the
+# 3.5 s toast stays up
+- tapOn:
+    text: "(?i)test valid purchase"
+    waitToSettleTimeoutMs: 500
+- extendedWaitUntil:
+    visible: "Welcome to Premium!"
+    timeout: 20000
+- assertVisible: "Your subscription is active"
+- assertNotVisible: "Purchase failed"
+# The app tells the server right away (sync-premium), retried while it does
+- retry:
+    maxRetries: 10
+    commands:
+      - runScript:
+          file: ../../scripts/probe-premium.js
+          env:
+            USER: "e2e00000-0000-0000-0000-000000000004"
+      - assertTrue:
+          condition: ${output.dbPremium && output.revenuecatPremium}
+          label: "Premium in the database and in RevenueCat"
+# Cloud sync can be turned on now: without Premium the switch stays off and
+# the dialog shows
+- tapOn: "Account"
+- tapOn:
+    id: "setting-cloudSync"
+- assertVisible:
+    id: "setting-cloudSync"
+    checked: true
+- assertNotVisible: "Cloud sync is part of Premium"
+
+# 4. Still premium after a relaunch
+- stopApp
+- launchApp
+- extendedWaitUntil:
+    visible: "Hello, Buyer Cook!"
+    timeout: 20000
+- tapOn: "Premium"
+- scrollUntilVisible:
+    element: "Your subscription is active"
+- assertNotVisible: "Login required"
+# The app knows it's premium: cloud sync turned off and on again, without the
+# Premium dialog. (A non-premium app also turns the stored setting off on its
+# own once it knows.)
+- tapOn: "Account"
+- assertVisible:
+    id: "setting-cloudSync"
+    checked: true
+- tapOn:
+    id: "setting-cloudSync"
+# Turning it off asks first (the cloud copy is deleted after 30 days)
+- extendedWaitUntil:
+    visible: "Turn off cloud sync"
+    timeout: 5000
+- tapOn:
+    id: "alert-destructive"
+- assertVisible:
+    id: "setting-cloudSync"
+    checked: false
+- tapOn:
+    id: "setting-cloudSync"
+- assertVisible:
+    id: "setting-cloudSync"
+    checked: true
+- assertNotVisible: "Cloud sync is part of Premium"
+- runScript:
+    file: ../../scripts/probe-premium.js
+    env:
+      USER: "e2e00000-0000-0000-0000-000000000004"
+- assertTrue:
+    condition: ${output.dbPremium && output.revenuecatPremium}
+    label: "After the relaunch, still premium in the database and in RevenueCat"

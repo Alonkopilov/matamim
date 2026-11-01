@@ -1,0 +1,177 @@
+# A team member and then the host log in on a freshly installed app. The
+# device remembers nothing, so the team, its recipes and the member's own
+# recipes all have to come from the server.
+#
+# Seed: rehost@ ("Reinstall Host", premium, cloud sync on) hosts Reinstall
+# Team with Host Lasagna. remember@ ("Reinstall Member", premium, cloud sync
+# on) is its member, with Member Tacos in the cloud. Both log in on the
+# device, one after the other, each on a fresh install.
+#
+# Checks:
+#   1. The member, on a fresh install: Shared team turns on by itself and is
+#      locked, the Team tab shows the team with 2 members, the host as Premium
+#      Head chef without an email and the member's own row with its email,
+#      Member Tacos (own, from the cloud) and Host Lasagna (the team's) are
+#      listed. On the device the team's recipes are only Host Lasagna.
+#   2. The host, on a second fresh install: the same from its side. Members: 2
+#      with the member's email, the host controls are there, Host Lasagna is
+#      its own and Member Tacos the team's.
+appId: com.matamim.app.e2e
+name: Team - member and host on a fresh install
+tags:
+  - team
+---
+- runScript:
+    file: ../../scripts/revenuecat-grant.js
+    env:
+      USER: "e2e00000-0000-0000-0000-000000000031"
+- runScript:
+    file: ../../scripts/revenuecat-grant.js
+    env:
+      USER: "e2e00000-0000-0000-0000-000000000030"
+- launchApp:
+    clearState: true
+- extendedWaitUntil:
+    visible: "Create my first recipe"
+    timeout: 20000
+
+# 1. The member
+- runScript: ../../scripts/probe-device-recipes.js
+- assertTrue:
+    condition: ${output.deviceRecipeCount === 0 && output.deviceTeamRecipeCount === 0}
+    label: "A fresh install has no recipes"
+- runFlow:
+    file: ../../subflows/login.yaml
+    env:
+      EMAIL: "remember@e2e.test"
+      NAME: "Reinstall Member"
+- assertVisible:
+    id: "setting-cloudSync"
+    checked: true
+- scrollUntilVisible:
+    element:
+      id: "setting-collaborativeTeam"
+- extendedWaitUntil:
+    visible:
+      id: "setting-collaborativeTeam"
+      checked: true
+      enabled: false
+    timeout: 20000
+- retry:
+    maxRetries: 5
+    commands:
+      - tapOn: "Team"
+      - extendedWaitUntil:
+          visible: "The culinary team"
+          timeout: 4000
+- assertVisible:
+    id: "team-title"
+    text: "Reinstall Team"
+- assertVisible: "Members: 2"
+- assertVisible:
+    id: "team-member"
+    text: "Reinstall Host, Premium, Head chef"
+- assertVisible:
+    id: "team-member"
+    text: "Reinstall Member, remember@e2e.test, Premium"
+- assertNotVisible: ".*rehost@e2e.test.*"
+- assertNotVisible:
+    id: "team-edit"
+- assertNotVisible:
+    id: "team-invite"
+- assertVisible:
+    id: "team-leave"
+- tapOn: "Recipes"
+- extendedWaitUntil:
+    visible: "Member Tacos"
+    timeout: 20000
+- runFlow:
+    file: ../../subflows/find-card.yaml
+    env:
+      NAME: "Member Tacos"
+- runFlow:
+    file: ../../subflows/find-card.yaml
+    env:
+      NAME: "Host Lasagna"
+- retry:
+    maxRetries: 10
+    commands:
+      - waitForAnimationToEnd:
+          timeout: 1000
+      - runScript: ../../scripts/probe-device-recipes.js
+      - assertTrue:
+          condition: ${output.deviceTeamNames === "Host Lasagna" && output.deviceRecipeNames === "Member Tacos" && output.deviceRecipeOwners === "e2e00000-0000-0000-0000-000000000031" && output.devicePending === 0}
+          label: "On the device, Host Lasagna is the team's and Member Tacos is the member's own, nothing waiting to upload"
+
+# 2. The host, on a second fresh install
+- stopApp
+- launchApp:
+    clearState: true
+- extendedWaitUntil:
+    visible: "Create my first recipe"
+    timeout: 20000
+- runScript: ../../scripts/probe-device-recipes.js
+- assertTrue:
+    condition: ${output.deviceRecipeCount === 0 && output.deviceTeamRecipeCount === 0}
+    label: "The second fresh install has no recipes"
+- runFlow:
+    file: ../../subflows/login.yaml
+    env:
+      EMAIL: "rehost@e2e.test"
+      NAME: "Reinstall Host"
+- assertVisible:
+    id: "setting-cloudSync"
+    checked: true
+- scrollUntilVisible:
+    element:
+      id: "setting-collaborativeTeam"
+- extendedWaitUntil:
+    visible:
+      id: "setting-collaborativeTeam"
+      checked: true
+      enabled: false
+    timeout: 20000
+- retry:
+    maxRetries: 5
+    commands:
+      - tapOn: "Team"
+      - extendedWaitUntil:
+          visible: "The culinary team"
+          timeout: 4000
+- assertVisible:
+    id: "team-title"
+    text: "Reinstall Team"
+- assertVisible: "Members: 2"
+- assertVisible:
+    id: "team-member"
+    text: "Reinstall Host, rehost@e2e.test, Premium, Head chef"
+- assertVisible:
+    id: "team-member"
+    text: "Reinstall Member, remember@e2e.test, Premium"
+- assertVisible:
+    id: "team-edit"
+- assertVisible:
+    id: "team-invite"
+- assertVisible:
+    id: "team-leave"
+- tapOn: "Recipes"
+- extendedWaitUntil:
+    visible: "Host Lasagna"
+    timeout: 20000
+- runFlow:
+    file: ../../subflows/find-card.yaml
+    env:
+      NAME: "Host Lasagna"
+- runFlow:
+    file: ../../subflows/find-card.yaml
+    env:
+      NAME: "Member Tacos"
+- retry:
+    maxRetries: 10
+    commands:
+      - waitForAnimationToEnd:
+          timeout: 1000
+      - runScript: ../../scripts/probe-device-recipes.js
+      - assertTrue:
+          condition: ${output.deviceTeamNames === "Member Tacos" && output.deviceRecipeNames === "Host Lasagna" && output.deviceRecipeOwners === "e2e00000-0000-0000-0000-000000000030" && output.devicePending === 0}
+          label: "On the device, Member Tacos is the team's and Host Lasagna is the host's own"

@@ -1,0 +1,281 @@
+# Leaving an edit of a saved recipe any way but Back and the edit button asks
+# first, so the changes aren't dropped silently (Back and the edit button are
+# covered by edit-recipe.yaml). All the ways in change the screen's recipe, so
+# the app asks in one place.
+#
+# Two saved recipes, "Leave A" and "Leave B". Each check starts with A in edit
+# mode and its title changed, unless it says otherwise.
+#
+# Checks:
+#   1. Opening B from the recipes screen asks. Keep editing stays on A, still
+#      editing with the change. Discard opens B, and A kept its saved title
+#   2. The create menu's "New recipe" asks, and Discard opens the empty form
+#   3. The create menu's link import asks, and it's a pending import: Keep
+#      editing drops it, so the next new recipe opens without the "log in"
+#      alert, and Discard goes on to it
+#   4. With no changes there is nothing to ask: B opens at once
+#   5. A photo picked during the edit is removed from the device by Discard
+#   6. The system back gesture on an edit goes to the recipes screen without
+#      asking, and the edit is still there when A is opened again
+#
+# Switching tabs alone doesn't ask, the edit isn't lost by it. The system back
+# works the same way (the tab bar's back goes to the recipes screen).
+appId: com.matamim.app.e2e
+name: Guest - leaving an edit asks first
+tags:
+  - guest
+---
+- launchApp:
+    clearState: true
+- extendedWaitUntil:
+    visible: "Create my first recipe"
+    timeout: 20000
+- tapOn: "Create my first recipe"
+- runFlow:
+    file: ../../subflows/create-meal-recipe.yaml
+    env:
+      NAME: "Leave A"
+      MEAL: "Lunch"
+- tapOn:
+    id: "tab-create"
+- tapOn: "New recipe"
+- runFlow:
+    file: ../../subflows/create-meal-recipe.yaml
+    env:
+      NAME: "Leave B"
+      MEAL: "Dinner"
+
+# 1. A in edit mode with its title changed, then B from the recipes screen
+- tapOn: "Leave A"
+- tapOn: "Edit"
+- runFlow:
+    file: ../../subflows/replace-text.yaml
+    env:
+      ID: "recipe-title"
+      TEXT: "Leave A changed"
+- hideKeyboard
+# Another tab and back doesn't ask
+- tapOn: "Premium"
+- assertVisible:
+    text: "Premium"
+    selected: true
+- tapOn: "Recipes"
+- assertVisible:
+    text: "Recipes"
+    selected: true
+- assertNotVisible: "Discard changes\\?"
+- tapOn: "Leave B"
+- assertVisible: "Discard changes\\?"
+- tapOn: "Keep editing"
+- assertNotVisible: "Discard changes\\?"
+# A's screen, still editing with the change
+- assertVisible:
+    id: "recipe-title"
+    text: "Leave A changed"
+- assertVisible:
+    id: "save-recipe"
+# Asked again the next time
+- tapOn: "Recipes"
+- tapOn: "Leave B"
+- assertVisible: "Discard changes\\?"
+- tapOn:
+    id: "alert-destructive"
+- assertNotVisible: "Discard changes\\?"
+# B is shown, in view mode (Dinner is B's meal, A's is Lunch)
+- assertVisible: "Leave B"
+- assertVisible:
+    id: "property-meal-value"
+    text: "Dinner"
+- assertNotVisible:
+    id: "recipe-title"
+- assertNotVisible: "Leave A changed"
+# A as it was saved, here and on the device. Even a guest queues its creates
+# for a later sync, so the two recipes are the 2 pending changes.
+- tapOn: "Recipes"
+- tapOn: "Leave A"
+- assertNotVisible:
+    id: "recipe-title"
+- assertVisible: "Leave A"
+- assertNotVisible: "Leave A changed"
+- runScript: ../../scripts/probe-device-recipes.js
+- assertTrue:
+    condition: ${output.deviceRecipeNames === "Leave A|Leave B" && output.devicePending === 2}
+    label: "Both recipes saved with their titles, and only their two creates are queued (the discarded edit wrote nothing)"
+
+# 2. The create menu's "New recipe"
+- tapOn: "Edit"
+- runFlow:
+    file: ../../subflows/replace-text.yaml
+    env:
+      ID: "recipe-title"
+      TEXT: "Leave A changed"
+- hideKeyboard
+- tapOn:
+    id: "tab-create"
+- tapOn: "New recipe"
+- assertVisible: "Discard changes\\?"
+# Nothing opens under the question
+- assertNotVisible:
+    id: "create-recipe"
+- tapOn:
+    id: "alert-destructive"
+- assertVisible:
+    id: "create-recipe"
+- assertVisible:
+    id: "recipe-title"
+    text: ""
+- assertNotVisible: "Leave A changed"
+- tapOn: "Back"
+- assertVisible:
+    text: "Recipes"
+    selected: true
+- assertVisible: "Leave A"
+- assertNotVisible: "Leave A changed"
+
+# 3a. The link import, and Keep editing
+- tapOn: "Leave A"
+- tapOn: "Edit"
+- runFlow:
+    file: ../../subflows/replace-text.yaml
+    env:
+      ID: "recipe-title"
+      TEXT: "Leave A changed"
+- hideKeyboard
+- tapOn:
+    id: "tab-create"
+- tapOn: "Import from a link"
+- assertVisible: "Discard changes\\?"
+- tapOn: "Keep editing"
+- assertNotVisible: "Discard changes\\?"
+- assertVisible:
+    id: "recipe-title"
+    text: "Leave A changed"
+- assertVisible:
+    id: "save-recipe"
+- waitForAnimationToEnd:
+    timeout: 3000
+- assertNotVisible: "Log in to try importing"
+# Leaving for real, then a plain new recipe: the import was dropped, so it
+# isn't offered now
+- tapOn: "Back"
+- assertVisible: "Discard changes\\?"
+- tapOn:
+    id: "alert-destructive"
+- assertVisible:
+    text: "Recipes"
+    selected: true
+- tapOn:
+    id: "tab-create"
+- tapOn: "New recipe"
+- assertVisible:
+    id: "create-recipe"
+# Settled, so an import alert that wasn't dropped would be up by now
+- waitForAnimationToEnd:
+    timeout: 3000
+- assertNotVisible: "Log in to try importing"
+- tapOn: "Back"
+
+# 3b. The same, and Discard: the import goes on, as a guest it needs an account
+- tapOn: "Leave A"
+- tapOn: "Edit"
+- runFlow:
+    file: ../../subflows/replace-text.yaml
+    env:
+      ID: "recipe-title"
+      TEXT: "Leave A changed"
+- hideKeyboard
+- tapOn:
+    id: "tab-create"
+- tapOn: "Import from a link"
+- assertVisible: "Discard changes\\?"
+- tapOn:
+    id: "alert-destructive"
+- assertVisible: "Log in to try importing"
+- assertVisible:
+    id: "create-recipe"
+- tapOn: "Cancel"
+- assertNotVisible: "Log in to try importing"
+- tapOn: "Back"
+- assertVisible:
+    text: "Recipes"
+    selected: true
+- assertVisible: "Leave A"
+- assertNotVisible: "Leave A changed"
+
+# 4. Edit mode with nothing changed: B opens without asking
+- tapOn: "Leave A"
+- tapOn: "Edit"
+- assertVisible:
+    id: "recipe-title"
+    text: "Leave A"
+- tapOn: "Recipes"
+- tapOn: "Leave B"
+- assertNotVisible: "Discard changes\\?"
+- assertVisible: "Leave B"
+# B's meal, A's is Lunch
+- assertVisible:
+    id: "property-meal-value"
+    text: "Dinner"
+- assertNotVisible:
+    id: "recipe-title"
+
+# 5. A photo picked during the edit is gone after Discard, and A has none
+- runScript: ../../scripts/probe-device-images.js
+- assertTrue:
+    condition: ${output.localImageCount === 0}
+    label: "No photo on the device before"
+- tapOn: "Recipes"
+- tapOn: "Leave A"
+- tapOn: "Edit"
+- runFlow: ../../subflows/pick-photo.yaml
+- runScript: ../../scripts/probe-device-images.js
+- assertTrue:
+    condition: ${output.localImageCount === 1}
+    label: "The picked photo is on the device"
+- tapOn: "Recipes"
+- tapOn: "Leave B"
+- assertVisible: "Discard changes\\?"
+- tapOn:
+    id: "alert-destructive"
+- assertVisible: "Leave B"
+- runScript: ../../scripts/probe-device-images.js
+- assertTrue:
+    condition: ${output.localImageCount === 0}
+    label: "The picked photo was removed from the device"
+- runScript: ../../scripts/probe-device-recipes.js
+- assertTrue:
+    condition: ${output.deviceImages["Leave A"] === "" && output.deviceRecipeNames === "Leave A|Leave B"}
+    label: "A still has no photo"
+
+# 6. The system back gesture leaves the edit without asking, and keeps it
+- tapOn: "Recipes"
+- tapOn: "Leave A"
+- tapOn: "Edit"
+- runFlow:
+    file: ../../subflows/replace-text.yaml
+    env:
+      ID: "recipe-title"
+      TEXT: "Leave A system back"
+- hideKeyboard
+- assertVisible:
+    id: "save-recipe"
+- back
+- assertVisible:
+    text: "Recipes"
+    selected: true
+- assertNotVisible: "Discard changes\\?"
+- assertNotVisible:
+    id: "recipe-title"
+# Nothing was saved
+- runScript: ../../scripts/probe-device-recipes.js
+- assertTrue:
+    condition: ${output.deviceRecipeNames === "Leave A|Leave B"}
+    label: "Back saved nothing, A keeps its title"
+# Opening A again shows the same edit
+- tapOn: "Leave A"
+- assertNotVisible: "Discard changes\\?"
+- assertVisible:
+    id: "recipe-title"
+    text: "Leave A system back"
+- assertVisible:
+    id: "save-recipe"

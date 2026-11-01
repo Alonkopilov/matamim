@@ -1,0 +1,65 @@
+{
+  "sections": {
+    "settings": "Settings",
+    "actions": "Account",
+    "danger": "Sign out"
+  },
+  "actions": {
+    "changeUsername": "Change username",
+    "changeEmail": "Change email",
+    "changePassword": "Change password",
+    "logout": "Log out",
+    "deleteAccount": "Delete account"
+  },
+  "updateModals": {
+    "name": {
+      "title": "Change name",
+      "placeholder": "Enter a new name"
+    },
+    "email": {
+      "title": "Change email",
+      "placeholder": "Enter a new email",
+      "sameEmail": "That's already your email",
+      "requestDescription": "We'll send a code to {{email}} and another to the new address.",
+      "newCodeDescription": "Last step: enter the code we sent to {{email}} to confirm the new address."
+    },
+    "password": {
+      "title": "Change password",
+      "placeholder": "Enter a new password",
+      "codeDescription": "Enter the code we sent to {{email}} and your new password."
+    },
+    "identityDescription": "To make sure it's you, we'll send a code to {{email}}.",
+    "identityCodeDescription": "Enter the code we sent to {{email}}."
+  },
+  "deleteAccount": {
+    "title": "Delete account",
+    "message": "Your account, recipes and photos will be deleted from the cloud and from this device. This can't be undone.\n\nDeleting the account doesn't cancel a subscription bought in the App Store or Google Play. Cancel it in your store settings.",
+    "confirm": "Delete account",
+    "failedTitle": "Error",
+    "failedMessage": "Your account wasn't deleted: {{error}}",
+    "successTitle": "Success",
+    "successMessage": "Your account was deleted"
+  },
+  "logout": {
+    "title": "Log out",
+    "deviceOnlyMessage": "Your recipes are saved only on this device, not in the cloud. Logging out deletes them from this device, and they can't be restored.\n\nTo keep them, turn on cloud sync with Premium before logging out.",
+    "unsyncedMessage": "Some of your changes haven't uploaded to the cloud yet. Logging out now deletes them from this device.\n\nTo keep them, connect to the internet and wait for them to upload.",
+    "confirm": "Log out"
+  },
+  "cloudSync": {
+    "requiredForTeamTitle": "Cloud sync required",
+    "requiredForTeamMessage": "To create a shared team, turn on cloud sync first so team members can see your recipes.",
+    "premiumTitle": "Cloud sync is part of Premium",
+    "premiumMessage": "Upgrade to Premium to back up your recipes to the cloud and share them with your team.",
+    "upgrade": "Go Premium",
+    "disableTitle": "Turn off cloud sync",
+    "disableMessage": "Your recipes stay on this device. Their copy in the cloud will be deleted in 30 days, unless you turn cloud sync back on before then.",
+    "disableTeamMessage": "Your recipes stay on this device, but new recipes and changes won't reach your team. In 30 days your recipes will be deleted from the cloud and from your team, unless you turn cloud sync back on before then.",
+    "disableConfirm": "Turn off"
+  },
+  "toasts": {
+    "nameUpdated": "Name updated",
+    "emailChanged": "Email changed!",
+    "passwordChanged": "Password changed!"
+  }
+}

@@ -1,0 +1,140 @@
+{
+  "expo": {
+    "name": "Matamim",
+    "slug": "ourrecipes",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "scheme": "ourrecipes",
+    "userInterfaceStyle": "automatic",
+    "backgroundColor": "#141517",
+    "ios": {
+      "supportsTablet": true,
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      },
+      "bundleIdentifier": "com.matamim.app"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#2A2C30",
+        "foregroundImage": "./assets/foreground.png",
+        "backgroundImage": "./assets/background.png",
+        "monochromeImage": "./assets/monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false,
+      "blockedPermissions": [
+        "android.permission.SYSTEM_ALERT_WINDOW"
+      ],
+      "package": "com.matamim.app"
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash.png",
+          "imageWidth": 140,
+          "resizeMode": "contain",
+          "backgroundColor": "#141517",
+          "dark": {
+            "backgroundColor": "#141517"
+          }
+        }
+      ],
+      [
+        "expo-localization",
+        {
+          "supportedLocales": {
+            "ios": [
+              "en",
+              "he"
+            ],
+            "android": [
+              "en",
+              "he"
+            ]
+          }
+        }
+      ],
+      "expo-font",
+      "expo-image",
+      "expo-status-bar",
+      "expo-web-browser",
+      [
+        "expo-navigation-bar",
+        {
+          "enforceContrast": false,
+          "style": "light"
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "The app accesses your photos to let you upload recipe pictures and import recipes from photos.",
+          "cameraPermission": "The camera is used only when you choose to photograph a recipe to import it.",
+          "microphonePermission": false,
+          "colors": {
+            "cropToolbarColor": "#000000"
+          },
+          "dark": {
+            "colors": {
+              "cropToolbarColor": "#000000"
+            }
+          }
+        }
+      ],
+      [
+        "@sentry/react-native",
+        {
+          "organization": "matamim",
+          "project": "ourrecipes"
+        }
+      ],
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "enableMinifyInReleaseBuilds": true,
+            "enableShrinkResourcesInReleaseBuilds": true
+          }
+        }
+      ],
+      [
+        "expo-share-intent",
+        {
+          "iosActivationRules": {
+            "NSExtensionActivationSupportsWebURLWithMaxCount": 1,
+            "NSExtensionActivationSupportsWebPageWithMaxCount": 1,
+            "NSExtensionActivationSupportsText": true,
+            "NSExtensionActivationSupportsImageWithMaxCount": 3
+          },
+          "iosShareExtensionName": "Matamim Share",
+          "androidIntentFilters": ["text/*", "image/*"],
+          "androidMultiIntentFilters": ["image/*"]
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true,
+      "reactCompiler": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "1ee49736-1d1c-4ac1-8c83-0676e06a30a1"
+      }
+    },
+    "locales": {
+      "en": "./languages/en.json",
+      "he": "./languages/he.json"
+    },
+    "owner": "alonkop",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/1ee49736-1d1c-4ac1-8c83-0676e06a30a1"
+    }
+  }
+}

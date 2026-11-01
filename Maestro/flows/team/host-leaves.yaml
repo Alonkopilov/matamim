@@ -1,0 +1,270 @@
+# A host leaves its team and the team is handed to the right member. Also
+# the product owner's decision: a host who deletes the account does the same.
+#
+# Seed: movehost@ (premium, cloud sync on) hosts Transfer Team with Old Host
+# Soup. Its members, by join date: oldlapsed@ (premium ended 10 days ago),
+# earlyfree@ (free), firstprem@ (premium, owns First Pie) and secondprem@
+# (premium). delhost@ (premium) hosts Heir Team, with heir@ and then
+# lateheir@ (both premium) as members.
+#
+# Checks:
+#   1. movehost@ is asked first, with the message that the Premium member who
+#      joined first will manage the team (Cancel changes nothing). Confirmed:
+#      it is told so and is back on Account with Shared team off and unlocked.
+#      On the server firstprem@ is the host, not oldlapsed@ (premium ended) or
+#      earlyfree@ (free), who both joined earlier. The others stay members and
+#      movehost@ is in no team. Its device keeps no team recipes
+#   2. firstprem@ sees the team as its head chef, with the host's controls,
+#      4 members, and not Transfer Host. Old Host Soup isn't among its
+#      recipes, on screen or on the server
+#   3. delhost@ deletes its account: it is gone, Heir Team now belongs to
+#      heir@ (the oldest premium member), lateheir@ is still a member and
+#      heir@ is no longer in team_members
+appId: com.matamim.app.e2e
+name: Team - the host leaves
+tags:
+  - team
+---
+- runScript:
+    file: ../../scripts/revenuecat-grant.js
+    env:
+      USER: "e2e00000-0000-0000-0000-000000000036"
+- runScript:
+    file: ../../scripts/revenuecat-grant.js
+    env:
+      USER: "e2e00000-0000-0000-0000-000000000039"
+- runScript:
+    file: ../../scripts/revenuecat-grant.js
+    env:
+      USER: "e2e00000-0000-0000-0000-000000000041"
+- launchApp:
+    clearState: true
+- extendedWaitUntil:
+    visible: "Create my first recipe"
+    timeout: 20000
+
+# 1. The host leaves
+- runFlow:
+    file: ../../subflows/login.yaml
+    env:
+      EMAIL: "movehost@e2e.test"
+      NAME: "Transfer Host"
+- retry:
+    maxRetries: 5
+    commands:
+      - tapOn: "Team"
+      - extendedWaitUntil:
+          visible: "The culinary team"
+          timeout: 4000
+- assertVisible:
+    id: "team-title"
+    text: "Transfer Team"
+- assertVisible: "Members: 5"
+- assertVisible:
+    id: "team-leave"
+# The team's recipe and its own are on the device before leaving, so their
+# removal and keeping are real
+- retry:
+    maxRetries: 15
+    commands:
+      - waitForAnimationToEnd:
+          timeout: 1000
+      - runScript: ../../scripts/probe-device-recipes.js
+      - assertTrue:
+          condition: ${output.deviceTeamNames === "First Pie" && output.deviceRecipeNames === "Old Host Soup"}
+          label: "Before leaving, the device has First Pie from the team and its own Old Host Soup"
+# The dialog is found by its message, its title is also "Leave team"
+- tapOn:
+    id: "team-leave"
+- extendedWaitUntil:
+    visible: "Are you sure you want to leave the team\\? The Premium member who joined first will manage it, and everyone's recipes will stay safe\\."
+    timeout: 5000
+- assertNotVisible: ".*All members will leave.*"
+- tapOn:
+    id: "alert-cancel"
+- extendedWaitUntil:
+    notVisible: "Are you sure you want to leave the team\\?.*"
+    timeout: 5000
+- assertVisible: "The culinary team"
+- runScript:
+    file: ../../scripts/probe-team.js
+    env:
+      TEAM: "e2e7ea00-0000-0000-0000-000000000036"
+      USER: ""
+- assertTrue:
+    condition: ${output.teamExists && output.teamHost === "e2e00000-0000-0000-0000-000000000036" && output.teamMembers === "e2e00000-0000-0000-0000-000000000037|e2e00000-0000-0000-0000-000000000038|e2e00000-0000-0000-0000-000000000039|e2e00000-0000-0000-0000-000000000040"}
+    label: "Cancel changed nothing, movehost@ still hosts with its 4 members"
+- tapOn:
+    id: "team-leave"
+- extendedWaitUntil:
+    visible: "Are you sure you want to leave the team\\?.*"
+    timeout: 5000
+- tapOn:
+    id: "alert-destructive"
+- extendedWaitUntil:
+    visible: "You left the team\\. Another member manages it now\\."
+    timeout: 15000
+- assertNotVisible: "The culinary team"
+- assertVisible:
+    text: "Account"
+    selected: true
+- scrollUntilVisible:
+    element:
+      id: "setting-collaborativeTeam"
+- assertVisible:
+    id: "setting-collaborativeTeam"
+    checked: false
+    enabled: true
+- runScript:
+    file: ../../scripts/probe-team.js
+    env:
+      TEAM: "e2e7ea00-0000-0000-0000-000000000036"
+      USER: ""
+- assertTrue:
+    condition: ${output.teamExists && output.teamHost === "e2e00000-0000-0000-0000-000000000039"}
+    label: "firstprem@ is the host, not oldlapsed@ (premium ended) or earlyfree@ (free)"
+- assertTrue:
+    condition: ${output.teamMembers === "e2e00000-0000-0000-0000-000000000037|e2e00000-0000-0000-0000-000000000038|e2e00000-0000-0000-0000-000000000040"}
+    label: "oldlapsed@, earlyfree@ and secondprem@ are still members, firstprem@ is no longer one"
+- runScript:
+    file: ../../scripts/probe-team.js
+    env:
+      TEAM: ""
+      USER: "e2e00000-0000-0000-0000-000000000036"
+- assertTrue:
+    condition: ${!output.teamExists}
+    label: "movehost@ is in no team"
+- retry:
+    maxRetries: 10
+    commands:
+      - waitForAnimationToEnd:
+          timeout: 1000
+      - runScript: ../../scripts/probe-device-recipes.js
+      - assertTrue:
+          condition: ${output.deviceTeamRecipeCount === 0 && output.deviceRecipeNames === "Old Host Soup"}
+          label: "movehost@'s device has no team recipes and keeps its own Old Host Soup"
+- runScript:
+    file: ../../scripts/probe-cloud.js
+    env:
+      USER: "e2e00000-0000-0000-0000-000000000036"
+- assertTrue:
+    condition: ${output.cloudNames === "Old Host Soup"}
+    label: "Old Host Soup is still movehost@'s in the cloud"
+
+# 2. The new host
+- scrollUntilVisible:
+    element: "Delete account"
+- tapOn: "Log out"
+- extendedWaitUntil:
+    visible:
+      id: "account-submit"
+    timeout: 20000
+- runFlow:
+    file: ../../subflows/login.yaml
+    env:
+      EMAIL: "firstprem@e2e.test"
+      NAME: "First Premium"
+- retry:
+    maxRetries: 5
+    commands:
+      - tapOn: "Team"
+      - extendedWaitUntil:
+          visible: "The culinary team"
+          timeout: 4000
+- assertVisible:
+    id: "team-title"
+    text: "Transfer Team"
+- assertVisible: "Members: 4"
+- assertVisible:
+    id: "team-member"
+    text: "First Premium, firstprem@e2e.test, Premium, Head chef"
+- assertNotVisible: ".*Transfer Host.*"
+- scrollUntilVisible:
+    element: "Lapsed Member, oldlapsed@e2e.test.*"
+- assertVisible: "Early Free, earlyfree@e2e.test.*"
+- assertVisible: "Second Premium, secondprem@e2e.test.*"
+- assertVisible:
+    id: "team-edit"
+- assertVisible:
+    id: "team-invite"
+- assertVisible:
+    id: "team-leave"
+- tapOn: "Recipes"
+- extendedWaitUntil:
+    visible: "First Pie"
+    timeout: 20000
+- scrollUntilVisible:
+    element: "That's all for now.*"
+- assertNotVisible: "Old Host Soup"
+- runScript:
+    file: ../../scripts/probe-visible-recipes.js
+    env:
+      EMAIL: "firstprem@e2e.test"
+- assertTrue:
+    condition: ${output.visibleNames.indexOf("Old Host Soup") === -1 && output.visibleNames.indexOf("First Pie") !== -1}
+    label: "On the server firstprem@ sees First Pie and not Old Host Soup"
+
+# 3. A host deletes the account
+- tapOn: "Account"
+- scrollUntilVisible:
+    element: "Delete account"
+- tapOn: "Log out"
+- extendedWaitUntil:
+    visible:
+      id: "account-submit"
+    timeout: 20000
+- runFlow:
+    file: ../../subflows/login.yaml
+    env:
+      EMAIL: "delhost@e2e.test"
+      NAME: "Delete Host"
+- retry:
+    maxRetries: 5
+    commands:
+      - tapOn: "Team"
+      - extendedWaitUntil:
+          visible: "The culinary team"
+          timeout: 4000
+- assertVisible:
+    id: "team-title"
+    text: "Heir Team"
+- assertVisible: "Members: 3"
+- tapOn: "Account"
+- scrollUntilVisible:
+    element: "Delete account"
+- tapOn: "Delete account"
+- extendedWaitUntil:
+    visible: "(?s)Your account, recipes and photos will be deleted.*"
+    timeout: 5000
+- tapOn:
+    id: "alert-destructive"
+# A premium account has nothing waiting to upload, so the app stays on
+# Account instead of restarting
+- extendedWaitUntil:
+    visible: "Your account was deleted"
+    timeout: 30000
+- assertVisible:
+    id: "account-submit"
+# Shown once: dismissed, it doesn't come back
+- tapOn: "Got it"
+- waitForAnimationToEnd:
+    timeout: 2000
+- assertNotVisible: "Your account was deleted"
+- runScript:
+    file: ../../scripts/probe-user-rows.js
+    env:
+      USER: "e2e00000-0000-0000-0000-000000000041"
+- assertTrue:
+    condition: ${output.userRowsTotal === 0}
+    label: "No rows of delhost@ are left"
+- runScript:
+    file: ../../scripts/probe-team.js
+    env:
+      TEAM: "e2e7ea00-0000-0000-0000-000000000041"
+      USER: ""
+- assertTrue:
+    condition: ${output.teamExists && output.teamHost === "e2e00000-0000-0000-0000-000000000042"}
+    label: "Heir Team now belongs to heir@, the oldest premium member"
+- assertTrue:
+    condition: ${output.teamMembers === "e2e00000-0000-0000-0000-000000000043"}
+    label: "lateheir@ is still a member and heir@ no longer is one"

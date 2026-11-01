@@ -1,0 +1,6 @@
+{
+  "greetingToast": "היי {{name}}!",
+  "welcome": "שלום, {{name}}!",
+  "tagline": "תבשלו את האוכל שלכם,\nתתגבשו <highlight>בבית!</highlight>",
+  "recentRecipes": "מתכונים אחרונים:"
+}

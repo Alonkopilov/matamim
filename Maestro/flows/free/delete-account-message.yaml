@@ -1,0 +1,80 @@
+# Deleting the account says so, also when the app restarts.
+#
+# A free account with a recipe deletes itself. The deletion works (see
+# delete-account.yaml), then logs out, and the recipe waiting in the upload
+# queue makes the app restart. The restart drops alerts, so "Your account was
+# deleted" is kept for the next launch and shown once there.
+#
+# Checks:
+#   1. The deletion itself works: back to a guest, no rows of the account
+#      left (so a failed deletion isn't mistaken for the message missing)
+#   2. "Your account was deleted" is shown, and it stays up until dismissed
+#   3. Dismissed, and it doesn't come back after another launch
+appId: com.matamim.app.e2e
+name: Free - deleting the account says so
+tags:
+  - free
+---
+- launchApp:
+    clearState: true
+- extendedWaitUntil:
+    visible: "Create my first recipe"
+    timeout: 20000
+- runFlow:
+    file: ../../subflows/login.yaml
+    env:
+      EMAIL: "gone@e2e.test"
+      NAME: "Gone Cook"
+- tapOn: "Recipes"
+- tapOn: "Create my first recipe"
+- runFlow:
+    file: ../../subflows/create-meal-recipe.yaml
+    env:
+      NAME: "Gone Soup"
+      MEAL: "Lunch"
+- runScript: ../../scripts/probe-device-recipes.js
+- assertTrue:
+    condition: ${output.devicePending === 1}
+    label: "The recipe waits in the upload queue, the case that restarts"
+- tapOn: "Account"
+- scrollUntilVisible:
+    element: "Delete account"
+- tapOn: "Delete account"
+- extendedWaitUntil:
+    visible: "(?s)Your account, recipes and photos will be deleted.*"
+    timeout: 5000
+- tapOn:
+    id: "alert-destructive"
+# 1. Deleted
+- extendedWaitUntil:
+    visible: "Hello, Anonymous Chef!"
+    timeout: 20000
+- runScript:
+    file: ../../scripts/probe-user-rows.js
+    env:
+      USER: "e2e00000-0000-0000-0000-000000000011"
+- assertTrue:
+    condition: ${output.userRowsTotal === 0}
+    label: "No rows of the account left"
+# 2. The confirmation
+- assertVisible: "Your account was deleted"
+# It is still up after the screen settled: nothing dismisses it but the user
+- waitForAnimationToEnd:
+    timeout: 3000
+- assertVisible: "Your account was deleted"
+- tapOn: "Got it"
+# Settled, so a second alert queued behind it would be up by now
+- waitForAnimationToEnd:
+    timeout: 2000
+- assertNotVisible: "Your account was deleted"
+
+# 3. Once only: a relaunch is a guest's first screen, with no message
+- stopApp
+- launchApp
+- extendedWaitUntil:
+    visible: "Hello, Anonymous Chef!"
+    timeout: 20000
+# The notice is shown from the first render, so it's given time to appear
+- waitForAnimationToEnd:
+    timeout: 3000
+- assertNotVisible: "Your account was deleted"

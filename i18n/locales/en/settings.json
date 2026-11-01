@@ -1,0 +1,19 @@
+{
+  "language": {
+    "title": "Language",
+    "restartNotice": "The app will restart to apply the language.",
+    "system": "Automatic (by country)"
+  },
+  "keepScreenAwake": {
+    "title": "Keep screen on",
+    "description": "The screen stays on while you're viewing a recipe, handy when you don't want it to dim."
+  },
+  "cloudSync": {
+    "title": "Cloud sync",
+    "description": "All your recipes sync to our cloud. They'll be safe, and you can open them on other devices."
+  },
+  "collaborativeTeam": {
+    "title": "Shared team",
+    "description": "Start a team and invite your family or partner - everyone could see your recipes. Members with Premium can share their recipes too."
+  }
+}

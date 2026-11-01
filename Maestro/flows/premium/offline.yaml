@@ -1,0 +1,278 @@
+# The app is local first: once a premium account's recipes are on the device,
+# opening the app only downloads what changed, and without a connection the
+# recipes are all still there.
+#
+# Seed: offline@ has cloud sync on, and in the cloud Magenta Soup (with an
+# all-magenta photo) and Offline Bread.
+#
+# Checks:
+#   1. After logging in, both recipes and the photo are on the device
+#   2. A relaunch downloads nothing it already has: no full download, no
+#      recipe id check, no photo, only a fetch of what changed since
+#   3. A recipe added from another device comes down on the next launch, in
+#      such a fetch
+#   4. Without any connection, a relaunch shows all three recipes, with the
+#      orange chip and the photo, and cloud sync stays on. Nothing reaches
+#      local Supabase meanwhile.
+#   5. A recipe created offline is saved on the device with the gray chip,
+#      which stays gray while offline, and uploads by itself once the
+#      connection is back. Then nothing waits to upload, and logging out
+#      doesn't warn about unsynced recipes.
+appId: com.matamim.app.e2e
+name: Premium - local first and offline
+tags:
+  - premium
+onFlowComplete:
+  # Reconnects even when a check fails while offline
+  - setAirplaneMode: disabled
+  - runScript:
+      file: ../../scripts/probe-network.js
+      env:
+        STATE: "on"
+---
+- runScript:
+    file: ../../scripts/revenuecat-grant.js
+    env:
+      USER: "e2e00000-0000-0000-0000-000000000015"
+- launchApp:
+    clearState: true
+- extendedWaitUntil:
+    visible: "Create my first recipe"
+    timeout: 20000
+
+# 1. Downloaded once
+- runFlow:
+    file: ../../subflows/login.yaml
+    env:
+      EMAIL: "offline@e2e.test"
+      NAME: "Offline Cook"
+- tapOn: "Recipes"
+- runFlow:
+    file: ../../subflows/assert-card-cloud.yaml
+    env:
+      NAME: "Magenta Soup"
+      CHIP: "Saved in the cloud"
+- retry:
+    maxRetries: 10
+    commands:
+      - runScript:
+          file: ../../scripts/probe-screen-color.js
+          env:
+            RGB: "ff00ff"
+      - assertTrue:
+          condition: ${output.screenColorShare > 0.02}
+          label: "The photo is shown"
+- runFlow:
+    file: ../../subflows/assert-card-cloud.yaml
+    env:
+      NAME: "Offline Bread"
+      CHIP: "Saved in the cloud"
+- runScript: ../../scripts/probe-device-recipes.js
+- assertTrue:
+    condition: ${output.deviceRecipeNames === "Magenta Soup|Offline Bread" && output.devicePending === 0}
+    label: "Both recipes are on the device"
+
+# 2. A relaunch only asks what changed
+- runScript: ../../scripts/probe-now.js
+- evalScript: ${output.relaunchStart = output.since}
+- stopApp
+- launchApp
+- extendedWaitUntil:
+    visible: "Magenta Soup"
+    timeout: 20000
+- retry:
+    maxRetries: 10
+    commands:
+      - runScript:
+          file: ../../scripts/probe-recipe-downloads.js
+          env:
+            USER: "e2e00000-0000-0000-0000-000000000015"
+            SINCE: ${output.relaunchStart}
+      - assertTrue:
+          condition: ${output.incrementalDownloads >= 1}
+          label: "The app asked for what changed"
+- retry:
+    maxRetries: 5
+    commands:
+      - runScript:
+          file: ../../scripts/probe-screen-color.js
+          env:
+            RGB: "ff00ff"
+      - assertTrue:
+          condition: ${output.screenColorShare > 0.02}
+          label: "The photo is shown"
+- runScript:
+    file: ../../scripts/probe-recipe-downloads.js
+    env:
+      USER: "e2e00000-0000-0000-0000-000000000015"
+      SINCE: ${output.relaunchStart}
+- assertTrue:
+    condition: ${output.fullDownloads === 0 && output.idChecks === 0 && output.imageDownloads === 0}
+    label: "Nothing it already has was downloaded again"
+
+# 3. A recipe from another device
+- runScript:
+    file: ../../scripts/other-device-recipe.js
+    env:
+      EMAIL: "offline@e2e.test"
+      NAME: "Server Pie"
+      CATEGORY: "lunch"
+- runScript: ../../scripts/probe-now.js
+- evalScript: ${output.relaunchStart = output.since}
+- stopApp
+- launchApp
+- extendedWaitUntil:
+    visible: "Hello, Offline Cook!"
+    timeout: 20000
+- runFlow:
+    file: ../../subflows/assert-card-cloud.yaml
+    env:
+      NAME: "Server Pie"
+      CHIP: "Saved in the cloud"
+- runScript:
+    file: ../../scripts/probe-recipe-downloads.js
+    env:
+      USER: "e2e00000-0000-0000-0000-000000000015"
+      SINCE: ${output.relaunchStart}
+- assertTrue:
+    condition: ${output.fullDownloads === 0 && output.incrementalDownloads >= 1 && output.imageDownloads === 0}
+    label: "It came in a fetch of what changed"
+- runScript: ../../scripts/probe-device-recipes.js
+- assertTrue:
+    condition: ${output.deviceRecipeNames === "Magenta Soup|Offline Bread|Server Pie"}
+    label: "Three recipes on the device"
+
+# 4. No connection at all
+#    The probe turns off Wi-Fi, mobile data and adb reverse, since airplane
+#    mode alone leaves the emulator's Wi-Fi on.
+- runScript:
+    file: ../../scripts/probe-network.js
+    env:
+      STATE: "off"
+- setAirplaneMode: enabled
+- runScript: ../../scripts/probe-online.js
+- assertTrue:
+    condition: ${output.online === false}
+    label: "The device can't reach the internet"
+# Marked once offline, so requests the app made before don't count
+- runScript: ../../scripts/probe-now.js
+- evalScript: ${output.offlineStart = output.since}
+- stopApp
+- launchApp
+- extendedWaitUntil:
+    visible: "Hello, Offline Cook!"
+    timeout: 20000
+- runFlow:
+    file: ../../subflows/assert-card-cloud.yaml
+    env:
+      NAME: "Magenta Soup"
+      CHIP: "Saved in the cloud"
+- retry:
+    maxRetries: 5
+    commands:
+      - runScript:
+          file: ../../scripts/probe-screen-color.js
+          env:
+            RGB: "ff00ff"
+      - assertTrue:
+          condition: ${output.screenColorShare > 0.02}
+          label: "The photo is shown offline"
+- runFlow:
+    file: ../../subflows/assert-card-cloud.yaml
+    env:
+      NAME: "Offline Bread"
+      CHIP: "Saved in the cloud"
+- runFlow:
+    file: ../../subflows/assert-card-cloud.yaml
+    env:
+      NAME: "Server Pie"
+      CHIP: "Saved in the cloud"
+- tapOn: "Magenta Soup"
+- extendedWaitUntil:
+    visible: "1 +Beets"
+    timeout: 5000
+- tapOn: "Account"
+- assertVisible:
+    id: "setting-cloudSync"
+    checked: true
+
+# 5. Created offline
+- tapOn:
+    id: "tab-create"
+- tapOn: "New recipe"
+- runFlow:
+    file: ../../subflows/create-meal-recipe.yaml
+    env:
+      NAME: "Offline Pie"
+      MEAL: "Dessert"
+- runFlow:
+    file: ../../subflows/assert-card-cloud.yaml
+    env:
+      NAME: "Offline Pie"
+      CHIP: "Saved only on this device"
+- runScript: ../../scripts/probe-device-recipes.js
+- assertTrue:
+    condition: ${output.deviceRecipeNames === "Magenta Soup|Offline Bread|Offline Pie|Server Pie" && output.devicePending >= 1}
+    label: "Saved on the device, waiting to upload"
+- runScript:
+    file: ../../scripts/probe-cloud.js
+    env:
+      USER: "e2e00000-0000-0000-0000-000000000015"
+- assertTrue:
+    condition: ${output.cloudNames === "Magenta Soup|Offline Bread|Server Pie"}
+    label: "Not in the cloud yet"
+# Still gray after those checks: it didn't turn orange while offline
+- assertVisible:
+    id: "recipe-card"
+    containsDescendants:
+      - text: "Offline Pie"
+      - text: "Saved only on this device"
+- runScript:
+    file: ../../scripts/probe-cloud-requests.js
+    env:
+      SINCE: ${output.offlineStart}
+      PATHS: "/"
+- assertTrue:
+    condition: ${output.cloudRequests === 0}
+    label: "Nothing reached the cloud while offline"
+# Back online, it uploads without anything done
+- setAirplaneMode: disabled
+- runScript:
+    file: ../../scripts/probe-network.js
+    env:
+      STATE: "on"
+# The sync retries with a growing wait, up to 30 s
+- extendedWaitUntil:
+    visible:
+      id: "recipe-card"
+      containsDescendants:
+        - text: "Offline Pie"
+        - text: "Saved in the cloud"
+    timeout: 60000
+- runScript:
+    file: ../../scripts/probe-cloud.js
+    env:
+      USER: "e2e00000-0000-0000-0000-000000000015"
+- assertTrue:
+    condition: ${output.cloudNames === "Magenta Soup|Offline Bread|Offline Pie|Server Pie" && output.cloudRecipe["Offline Pie"].category === "dessert" && output.cloudRecipe["Offline Pie"].firstIngredient === "Salt"}
+    label: "Uploaded as created once back online"
+# The app saves its pending changes a moment after an upload
+- retry:
+    maxRetries: 5
+    commands:
+      - runScript: ../../scripts/probe-device-recipes.js
+      - assertTrue:
+          condition: ${output.devicePending === 0}
+          label: "Nothing waits to upload"
+# Shown only when nothing was waiting to upload, otherwise the app restarts.
+# Up for 3.5 s, so waited for before anything else.
+- tapOn: "Account"
+- scrollUntilVisible:
+    element: "Delete account"
+- tapOn: "Log out"
+- extendedWaitUntil:
+    visible: "You've logged out!"
+    timeout: 20000
+- assertVisible:
+    id: "account-submit"
+- assertNotVisible: "(?s)Your recipes are saved only on this device.*"

@@ -1,0 +1,17 @@
+# Types a team invite code on the join team screen's keypad. The 8th digit
+# submits it. Starts on the join screen with no digits typed.
+#
+# env: CODE, the 8 digits
+appId: com.matamim.app.e2e
+---
+# The keypad's bottom row can be below the screen
+- scrollUntilVisible:
+    element:
+      id: "join-key-0"
+- evalScript: ${output.codePosition = 0}
+- repeat:
+    times: 8
+    commands:
+      - tapOn:
+          id: "join-key-${String(CODE).charAt(output.codePosition)}"
+      - evalScript: ${output.codePosition = output.codePosition + 1}

@@ -1,0 +1,15 @@
+{{ if eq .Data.language "en" }}
+<div dir="ltr" style="font-family: Arial, sans-serif; font-size: 16px; color: #141517;">
+  <h2>Confirm it's you</h2>
+  <p>Someone asked to change the password of your Matamim account. If it was you, enter this code in the app:</p>
+  <p style="font-size: 32px; font-weight: bold; letter-spacing: 6px;">{{ .Token }}</p>
+  <p>The code is valid for one hour. If it wasn't you, don't share the code with anyone and change your password.</p>
+</div>
+{{ else }}
+<div dir="rtl" style="font-family: Arial, sans-serif; font-size: 16px; color: #141517; text-align: right;">
+  <h2>אימות שזה את/ה</h2>
+  <p>התקבלה בקשה לשנות את הסיסמה של החשבון שלך במטעמים. אם זה את/ה, הזינו את הקוד הזה באפליקציה:</p>
+  <p dir="ltr" style="font-size: 32px; font-weight: bold; letter-spacing: 6px; text-align: right;">{{ .Token }}</p>
+  <p>הקוד בתוקף לשעה. אם זה לא את/ה, אל תשתפו את הקוד עם אף אחד ושנו את הסיסמה.</p>
+</div>
+{{ end }}

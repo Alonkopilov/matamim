@@ -1,0 +1,23 @@
+# Checks a recipe card's cloud chip on the recipes screen: its label is
+# "Saved in the cloud" (the orange cloud) or "Saved only on this device" (the
+# gray crossed-out cloud). Waits for it, since the chip changes once an
+# upload finishes. Starts and stays on the recipes screen.
+#
+# env: NAME, the recipe's title. CHIP, the label expected
+appId: com.matamim.app.e2e
+---
+- runFlow:
+    file: find-card.yaml
+    env:
+      NAME: ${NAME}
+# The chip is under the title, keep it clear of the floating tab bar
+- scrollUntilVisible:
+    element: ${NAME}
+    centerElement: true
+- extendedWaitUntil:
+    visible:
+      id: "recipe-card"
+      containsDescendants:
+        - text: ${NAME}
+        - text: ${CHIP}
+    timeout: 20000

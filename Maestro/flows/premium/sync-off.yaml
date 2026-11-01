@@ -1,0 +1,495 @@
+# A premium account turns cloud sync off. Its recipes stay on the device and
+# in the cloud for 30 days, then the cloud copy is deleted. Turning it back
+# on uploads them again.
+#
+# Seed: syncoff@ has cloud sync on, and two recipes in the cloud: Magenta
+# Soup with an all-magenta photo, and Syncoff Bread.
+#
+# Checks:
+#   1. Turning it off asks first, saying the cloud copy is deleted in 30
+#      days. Cancel leaves it on, on the server too.
+#   2. Confirmed: off on the server, the countdown started, the cloud copy is
+#      untouched, the cards show the gray chip, and the photo is copied to
+#      the device
+#   3. A recipe created and one edited while it's off stay on the device
+#   4. Turned back on within 30 days, without asking: the countdown stops,
+#      the changes upload, nothing else is uploaded again, the device's copy
+#      of the photo is removed, the cards show the orange chip
+#   5. Off again for over 30 days, the nightly purge deletes the cloud copy:
+#      every recipe row, then the photo. The device keeps all three recipes
+#      and shows the photo. The same purge deletes the cloud copy of an
+#      account whose premium ended over 30 days ago, and keeps those of an
+#      account off for 29 days and of a premium account with cloud sync on.
+#   6. Turned on after that: all three recipes and the photo are uploaded
+#      again, with the same ids and the photo at the same path, the deletion
+#      is forgotten on the server, orange chips, no duplicates after a
+#      relaunch
+appId: com.matamim.app.e2e
+name: Premium - turning cloud sync off
+tags:
+  - premium
+---
+- runScript:
+    file: ../../scripts/revenuecat-grant.js
+    env:
+      USER: "e2e00000-0000-0000-0000-000000000016"
+- launchApp:
+    clearState: true
+- extendedWaitUntil:
+    visible: "Create my first recipe"
+    timeout: 20000
+- runFlow:
+    file: ../../subflows/login.yaml
+    env:
+      EMAIL: "syncoff@e2e.test"
+      NAME: "Syncoff Cook"
+- tapOn: "Recipes"
+- runFlow:
+    file: ../../subflows/assert-card-cloud.yaml
+    env:
+      NAME: "Magenta Soup"
+      CHIP: "Saved in the cloud"
+- runFlow:
+    file: ../../subflows/assert-card-cloud.yaml
+    env:
+      NAME: "Syncoff Bread"
+      CHIP: "Saved in the cloud"
+- runScript:
+    file: ../../scripts/probe-cloud.js
+    env:
+      USER: "e2e00000-0000-0000-0000-000000000016"
+- evalScript: ${output.seededPhotoSize = output.cloudImageSizes}
+- evalScript: ${output.seededSoupId = output.cloudRecipe["Magenta Soup"].id}
+- assertTrue:
+    condition: ${output.cloudNames === "Magenta Soup|Syncoff Bread" && output.cloudImages === "e2e00000-0000-0000-0000-000000000016/seed-magenta.jpg" && output.cloudSetting === "true" && output.cloudOffSeconds === -1}
+    label: "Starts with cloud sync on and both recipes and the photo in the cloud"
+
+# 1. Asks first, Cancel keeps it on
+- tapOn: "Account"
+- assertVisible:
+    id: "setting-cloudSync"
+    checked: true
+# The app saves the setting in Auth (PUT /auth/v1/user). Reading the user
+# is a GET to the same path.
+- runScript: ../../scripts/probe-now.js
+- evalScript: ${output.cancelStart = output.since}
+- tapOn:
+    id: "setting-cloudSync"
+- extendedWaitUntil:
+    visible: "Turn off cloud sync"
+    timeout: 5000
+- assertVisible: "Your recipes stay on this device\\. Their copy in the cloud will be deleted in 30 days, unless you turn cloud sync back on before then\\."
+- tapOn:
+    id: "alert-cancel"
+- extendedWaitUntil:
+    notVisible: "Turn off cloud sync"
+    timeout: 5000
+- assertVisible:
+    id: "setting-cloudSync"
+    checked: true
+- runScript:
+    file: ../../scripts/probe-cloud.js
+    env:
+      USER: "e2e00000-0000-0000-0000-000000000016"
+# Checked again after a while, so a save that comes late is caught too
+- tapOn: "Recipes"
+- runFlow:
+    file: ../../subflows/assert-card-cloud.yaml
+    env:
+      NAME: "Magenta Soup"
+      CHIP: "Saved in the cloud"
+- runFlow:
+    file: ../../subflows/assert-card-cloud.yaml
+    env:
+      NAME: "Syncoff Bread"
+      CHIP: "Saved in the cloud"
+- tapOn: "Account"
+- assertVisible:
+    id: "setting-cloudSync"
+    checked: true
+- runScript:
+    file: ../../scripts/probe-cloud-requests.js
+    env:
+      SINCE: ${output.cancelStart}
+      PATHS: "/auth/v1/user"
+- runScript:
+    file: ../../scripts/probe-cloud.js
+    env:
+      USER: "e2e00000-0000-0000-0000-000000000016"
+- assertTrue:
+    condition: ${output.cloudRequestList.join("|").indexOf("PUT ") === -1 && output.cloudSetting === "true" && output.cloudOffSeconds === -1}
+    label: "Cancel saved nothing and left cloud sync on, on the server too"
+
+# 2. Confirmed
+- tapOn:
+    id: "setting-cloudSync"
+- extendedWaitUntil:
+    visible: "Turn off cloud sync"
+    timeout: 5000
+- assertVisible:
+    id: "alert-destructive"
+    text: "Turn off"
+- tapOn:
+    id: "alert-destructive"
+- assertVisible:
+    id: "setting-cloudSync"
+    checked: false
+- retry:
+    maxRetries: 10
+    commands:
+      - runScript:
+          file: ../../scripts/probe-cloud.js
+          env:
+            USER: "e2e00000-0000-0000-0000-000000000016"
+      - assertTrue:
+          condition: ${output.cloudSetting === "false" && output.cloudOffSeconds >= 0 && output.cloudOffSeconds < 300}
+          label: "Off on the server, the countdown started now"
+- assertTrue:
+    condition: ${output.cloudNames === "Magenta Soup|Syncoff Bread" && output.cloudImageSizes === output.seededPhotoSize && !output.cloudPurged}
+    label: "The cloud copy is untouched"
+- retry:
+    maxRetries: 10
+    commands:
+      - runScript: ../../scripts/probe-kept-images.js
+      - assertTrue:
+          condition: ${output.keptImages === "e2e00000-0000-0000-0000-000000000016_seed-magenta.jpg"}
+          label: "The photo is copied to the device"
+- tapOn: "Recipes"
+- runFlow:
+    file: ../../subflows/assert-card-cloud.yaml
+    env:
+      NAME: "Magenta Soup"
+      CHIP: "Saved only on this device"
+- runFlow:
+    file: ../../subflows/assert-card-cloud.yaml
+    env:
+      NAME: "Syncoff Bread"
+      CHIP: "Saved only on this device"
+
+# 3. Changes while it's off stay on the device
+- runScript: ../../scripts/probe-now.js
+- evalScript: ${output.offChangesStart = output.since}
+- tapOn:
+    id: "tab-create"
+- tapOn: "New recipe"
+- runFlow:
+    file: ../../subflows/create-meal-recipe.yaml
+    env:
+      NAME: "Offline Pie"
+      MEAL: "Dessert"
+- runFlow:
+    file: ../../subflows/find-card.yaml
+    env:
+      NAME: "Syncoff Bread"
+- tapOn: "Syncoff Bread"
+- tapOn: "Edit"
+- runFlow:
+    file: ../../subflows/replace-text.yaml
+    env:
+      ID: "recipe-title"
+      TEXT: "Syncoff Rolls"
+- hideKeyboard
+- tapOn:
+    id: "save-recipe"
+- extendedWaitUntil:
+    visible: "Recipe saved!"
+    timeout: 3000
+- tapOn: "Recipes"
+- runFlow:
+    file: ../../subflows/assert-card-cloud.yaml
+    env:
+      NAME: "Offline Pie"
+      CHIP: "Saved only on this device"
+- runFlow:
+    file: ../../subflows/assert-card-cloud.yaml
+    env:
+      NAME: "Syncoff Rolls"
+      CHIP: "Saved only on this device"
+- runScript: ../../scripts/probe-device-recipes.js
+- assertTrue:
+    condition: ${output.deviceRecipeNames === "Magenta Soup|Offline Pie|Syncoff Rolls" && output.devicePending >= 2}
+    label: "Both changes are saved on the device, waiting to upload"
+- runScript:
+    file: ../../scripts/probe-cloud-requests.js
+    env:
+      SINCE: ${output.offChangesStart}
+      PATHS: "/rest/v1/recipes,/storage/v1"
+- assertTrue:
+    condition: ${output.cloudRequests === 0}
+    label: "Nothing was sent to the cloud's recipes or images"
+- runScript:
+    file: ../../scripts/probe-cloud.js
+    env:
+      USER: "e2e00000-0000-0000-0000-000000000016"
+- assertTrue:
+    condition: ${output.cloudNames === "Magenta Soup|Syncoff Bread" && output.cloudRowCount === 2}
+    label: "The cloud still has the recipes as they were"
+- evalScript: ${output.soupUpdatedAt = output.cloudRecipe["Magenta Soup"].updatedAt}
+
+# 4. Back on within 30 days, without asking
+- tapOn: "Account"
+- tapOn:
+    id: "setting-cloudSync"
+- assertVisible:
+    id: "setting-cloudSync"
+    checked: true
+- assertNotVisible: "Turn off cloud sync"
+- assertNotVisible:
+    id: "alert-cancel"
+- retry:
+    maxRetries: 10
+    commands:
+      - runScript:
+          file: ../../scripts/probe-cloud.js
+          env:
+            USER: "e2e00000-0000-0000-0000-000000000016"
+      - assertTrue:
+          condition: ${output.cloudSetting === "true" && output.cloudOffSeconds === -1 && output.cloudNames === "Magenta Soup|Offline Pie|Syncoff Rolls"}
+          label: "On on the server, and both changes uploaded"
+# Again once the server has it, in case a dialog came up late
+- assertNotVisible:
+    id: "alert-cancel"
+- assertTrue:
+    condition: ${output.cloudRowCount === 3 && output.cloudRecipe["Magenta Soup"].updatedAt === output.soupUpdatedAt && output.cloudImageSizes === output.seededPhotoSize}
+    label: "The untouched recipe and the photo weren't uploaded again"
+- runScript:
+    file: ../../scripts/probe-cloud-requests.js
+    env:
+      SINCE: ${output.offChangesStart}
+      PATHS: "/storage/v1/object/recipe-images"
+- assertTrue:
+    condition: ${output.cloudRequests === 0}
+    label: "No image was uploaded"
+- retry:
+    maxRetries: 10
+    commands:
+      - runScript: ../../scripts/probe-kept-images.js
+      - assertTrue:
+          condition: ${output.keptImageCount === 0}
+          label: "The device's copy of the photo is removed"
+- tapOn: "Recipes"
+- runFlow:
+    file: ../../subflows/assert-card-cloud.yaml
+    env:
+      NAME: "Magenta Soup"
+      CHIP: "Saved in the cloud"
+- runFlow:
+    file: ../../subflows/assert-card-cloud.yaml
+    env:
+      NAME: "Offline Pie"
+      CHIP: "Saved in the cloud"
+- runFlow:
+    file: ../../subflows/assert-card-cloud.yaml
+    env:
+      NAME: "Syncoff Rolls"
+      CHIP: "Saved in the cloud"
+
+# 5. Off again, for over 30 days
+- tapOn: "Account"
+- tapOn:
+    id: "setting-cloudSync"
+- extendedWaitUntil:
+    visible: "Turn off cloud sync"
+    timeout: 5000
+- tapOn:
+    id: "alert-destructive"
+- assertVisible:
+    id: "setting-cloudSync"
+    checked: false
+- retry:
+    maxRetries: 10
+    commands:
+      - runScript:
+          file: ../../scripts/probe-cloud.js
+          env:
+            USER: "e2e00000-0000-0000-0000-000000000016"
+      - assertTrue:
+          condition: ${output.cloudSetting === "false" && output.cloudOffSeconds >= 0}
+          label: "Off on the server again"
+- retry:
+    maxRetries: 10
+    commands:
+      - runScript: ../../scripts/probe-kept-images.js
+      - assertTrue:
+          condition: ${output.keptImages === "e2e00000-0000-0000-0000-000000000016_seed-magenta.jpg"}
+          label: "The photo is copied to the device again"
+# 29 days: not yet
+- runScript:
+    file: ../../scripts/age-sync-off.js
+    env:
+      USER: "e2e00000-0000-0000-0000-000000000016"
+      DAYS: "29"
+- runScript: ../../scripts/purge-cloud.js
+- runScript:
+    file: ../../scripts/probe-cloud.js
+    env:
+      USER: "e2e00000-0000-0000-0000-000000000016"
+- assertTrue:
+    condition: ${output.cloudRowCount === 3 && !output.cloudPurged}
+    label: "After 29 days the cloud copy is still there"
+# 31 days
+- runScript:
+    file: ../../scripts/age-sync-off.js
+    env:
+      USER: "e2e00000-0000-0000-0000-000000000016"
+      DAYS: "2"
+- runScript: ../../scripts/purge-cloud.js
+- runScript:
+    file: ../../scripts/probe-cloud.js
+    env:
+      USER: "e2e00000-0000-0000-0000-000000000016"
+- assertTrue:
+    condition: ${output.cloudRowCount === 0 && output.cloudPurged && output.cloudImages === "e2e00000-0000-0000-0000-000000000016/seed-magenta.jpg"}
+    label: "After 31 days every recipe row is deleted, the photo waits for the image cleanup"
+- runScript:
+    file: ../../scripts/probe-cloud.js
+    env:
+      USER: "e2e00000-0000-0000-0000-000000000020"
+- assertTrue:
+    condition: ${output.cloudRowCount === 0 && output.cloudPurged}
+    label: "Premium ended 31 days ago: lapsed@'s cloud copy is deleted too"
+- runScript:
+    file: ../../scripts/probe-cloud.js
+    env:
+      USER: "e2e00000-0000-0000-0000-000000000021"
+- assertTrue:
+    condition: ${output.cloudNames === "Grace Soup" && !output.cloudPurged}
+    label: "Off for 29 days: grace@ keeps its cloud copy"
+- runScript:
+    file: ../../scripts/probe-cloud.js
+    env:
+      USER: "e2e00000-0000-0000-0000-000000000012"
+- assertTrue:
+    condition: ${output.cloudNames === "Dinner Rolls|Picnic Basket" && output.cloudSetting === "true" && !output.cloudPurged}
+    label: "A premium account that never turned it off keeps its cloud copy"
+- runScript:
+    file: ../../scripts/purge-images.js
+    env:
+      USER: "e2e00000-0000-0000-0000-000000000016"
+- runScript:
+    file: ../../scripts/probe-cloud.js
+    env:
+      USER: "e2e00000-0000-0000-0000-000000000016"
+- assertTrue:
+    condition: ${output.cloudImages === ""}
+    label: "The image cleanup deleted the photo"
+# The device keeps everything, the photo included
+- stopApp
+- launchApp
+- extendedWaitUntil:
+    visible: "Hello, Syncoff Cook!"
+    timeout: 20000
+- runScript: ../../scripts/probe-device-recipes.js
+- assertTrue:
+    condition: ${output.deviceRecipeNames === "Magenta Soup|Offline Pie|Syncoff Rolls"}
+    label: "The device still has the three recipes"
+- runFlow:
+    file: ../../subflows/assert-card-cloud.yaml
+    env:
+      NAME: "Magenta Soup"
+      CHIP: "Saved only on this device"
+- retry:
+    maxRetries: 5
+    commands:
+      - runScript:
+          file: ../../scripts/probe-screen-color.js
+          env:
+            RGB: "ff00ff"
+      - assertTrue:
+          condition: ${output.screenColorShare > 0.02}
+          label: "The photo is shown"
+- runFlow:
+    file: ../../subflows/assert-card-cloud.yaml
+    env:
+      NAME: "Offline Pie"
+      CHIP: "Saved only on this device"
+- runFlow:
+    file: ../../subflows/assert-card-cloud.yaml
+    env:
+      NAME: "Syncoff Rolls"
+      CHIP: "Saved only on this device"
+
+# 6. On again, everything is uploaded again
+- tapOn: "Account"
+- tapOn:
+    id: "setting-cloudSync"
+- assertVisible:
+    id: "setting-cloudSync"
+    checked: true
+- assertNotVisible: "Turn off cloud sync"
+- assertNotVisible:
+    id: "alert-cancel"
+- retry:
+    maxRetries: 15
+    commands:
+      - runScript:
+          file: ../../scripts/probe-cloud.js
+          env:
+            USER: "e2e00000-0000-0000-0000-000000000016"
+      - assertTrue:
+          condition: ${output.cloudNames === "Magenta Soup|Offline Pie|Syncoff Rolls" && !output.cloudPurged}
+          label: "The three recipes are in the cloud again, the deletion is forgotten"
+# Again once the server has it, in case a dialog came up late
+- assertNotVisible:
+    id: "alert-cancel"
+- assertTrue:
+    condition: ${output.cloudRowCount === 3 && output.cloudRecipe["Magenta Soup"].id === output.seededSoupId && output.cloudRecipe["Magenta Soup"].firstIngredient === "Beets" && output.cloudRecipe["Magenta Soup"].image === "e2e00000-0000-0000-0000-000000000016/seed-magenta.jpg" && output.cloudRecipe["Offline Pie"].category === "dessert"}
+    label: "Uploaded as they are on the device, with the same ids"
+- assertTrue:
+    condition: ${output.cloudImageSizes === output.seededPhotoSize}
+    label: "The photo is uploaded again at the same path, the same size"
+- retry:
+    maxRetries: 10
+    commands:
+      - runScript: ../../scripts/probe-kept-images.js
+      - assertTrue:
+          condition: ${output.keptImageCount === 0}
+          label: "The device's copy of the photo is removed"
+- tapOn: "Recipes"
+- runFlow:
+    file: ../../subflows/assert-card-cloud.yaml
+    env:
+      NAME: "Magenta Soup"
+      CHIP: "Saved in the cloud"
+- runFlow:
+    file: ../../subflows/assert-card-cloud.yaml
+    env:
+      NAME: "Offline Pie"
+      CHIP: "Saved in the cloud"
+- runFlow:
+    file: ../../subflows/assert-card-cloud.yaml
+    env:
+      NAME: "Syncoff Rolls"
+      CHIP: "Saved in the cloud"
+# No duplicates, on the device or in the cloud
+- stopApp
+- launchApp
+- extendedWaitUntil:
+    visible: "Hello, Syncoff Cook!"
+    timeout: 20000
+- runFlow:
+    file: ../../subflows/assert-card-cloud.yaml
+    env:
+      NAME: "Magenta Soup"
+      CHIP: "Saved in the cloud"
+- retry:
+    maxRetries: 5
+    commands:
+      - runScript:
+          file: ../../scripts/probe-screen-color.js
+          env:
+            RGB: "ff00ff"
+      - assertTrue:
+          condition: ${output.screenColorShare > 0.02}
+          label: "The photo is shown"
+- runScript: ../../scripts/probe-device-recipes.js
+- assertTrue:
+    condition: ${output.deviceRecipeCount === 3 && output.deviceRecipeNames === "Magenta Soup|Offline Pie|Syncoff Rolls" && output.devicePending === 0}
+    label: "Three recipes on the device, nothing left to upload"
+- runScript:
+    file: ../../scripts/probe-cloud.js
+    env:
+      USER: "e2e00000-0000-0000-0000-000000000016"
+- assertTrue:
+    condition: ${output.cloudRowCount === 3}
+    label: "Three rows in the cloud"

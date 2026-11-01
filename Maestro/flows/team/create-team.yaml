@@ -1,0 +1,412 @@
+# A premium account turns on Shared team and gets a team it manages: it
+# names it, invites with a code, can't join another team, keeps it across a
+# relaunch, deletes it and starts a new one.
+#
+# Seed: creator@ is premium with cloud sync on and no team.
+#
+# Checks:
+#   1. Without a team, the Team tab is locked with a message
+#   2. Turning on Shared team creates "New team", with the account as its only
+#      member, Premium and Head chef, and nothing else on the server
+#   3. The host can rename it. An empty name is refused with the server's
+#      message and the name is kept.
+#   4. The invite code is one 8-digit code, valid for about 5 minutes, the
+#      same one when reopened, and a new one once expired (the old one is
+#      deleted)
+#   5. A host can't join another team
+#   6. After a relaunch the team is still there, and the toggle is on and
+#      locked
+#   7. Deleting the team asks first (Cancel keeps it), then says so, turns
+#      the toggle off and unlocks it, and locks the Team tab again
+#   8. Turning Shared team on again creates a different team
+appId: com.matamim.app.e2e
+name: Team - create a team, rename, invite, delete
+tags:
+  - team
+---
+- runScript:
+    file: ../../scripts/revenuecat-grant.js
+    env:
+      USER: "e2e00000-0000-0000-0000-000000000022"
+- launchApp:
+    clearState: true
+- extendedWaitUntil:
+    visible: "Create my first recipe"
+    timeout: 20000
+- runFlow:
+    file: ../../subflows/login.yaml
+    env:
+      EMAIL: "creator@e2e.test"
+      NAME: "Creator Cook"
+- assertVisible:
+    id: "setting-cloudSync"
+    checked: true
+
+# 1. No team yet: the Team tab is locked
+- runScript:
+    file: ../../scripts/probe-team.js
+    env:
+      TEAM: ""
+      USER: "e2e00000-0000-0000-0000-000000000022"
+- assertTrue:
+    condition: ${!output.teamExists}
+    label: "No team on the server"
+- tapOn: "Team"
+- assertVisible: "Join or create a team from the Account tab first"
+- waitForAnimationToEnd
+- assertNotVisible: "The culinary team"
+- assertVisible:
+    text: "Account"
+    selected: true
+
+# 2. Shared team on creates the team
+- scrollUntilVisible:
+    element:
+      id: "setting-collaborativeTeam"
+- assertVisible:
+    id: "setting-collaborativeTeam"
+    checked: false
+- tapOn:
+    id: "setting-collaborativeTeam"
+- extendedWaitUntil:
+    visible: "The culinary team"
+    timeout: 15000
+- assertVisible:
+    id: "team-title"
+    text: "New team"
+- assertVisible: "Members: 1"
+- assertVisible:
+    id: "team-member"
+    text: "Creator Cook, creator@e2e.test, Premium, Head chef"
+- retry:
+    maxRetries: 5
+    commands:
+      - runScript:
+          file: ../../scripts/probe-team.js
+          env:
+            TEAM: ""
+            USER: "e2e00000-0000-0000-0000-000000000022"
+      - assertTrue:
+          condition: ${output.teamExists && output.teamTitle === "New team" && output.teamHost === "e2e00000-0000-0000-0000-000000000022" && output.teamMembers === ""}
+          label: "One team hosted by creator, called New team, with no other members"
+- evalScript: ${output.firstTeamId = output.teamId}
+
+# 3. The host manages it
+- assertVisible:
+    id: "team-edit"
+- assertVisible:
+    id: "team-invite"
+- assertVisible:
+    id: "team-leave"
+- tapOn:
+    id: "team-edit"
+- runFlow:
+    file: ../../subflows/replace-text.yaml
+    env:
+      ID: "team-title"
+      TEXT: "Creator Kitchen"
+- hideKeyboard
+- tapOn:
+    id: "team-edit"
+- extendedWaitUntil:
+    visible: "Team name updated"
+    timeout: 10000
+- assertVisible:
+    id: "team-title"
+    text: "Creator Kitchen"
+- runScript:
+    file: ../../scripts/probe-team.js
+    env:
+      TEAM: ""
+      USER: "e2e00000-0000-0000-0000-000000000022"
+- assertTrue:
+    condition: ${output.teamTitle === "Creator Kitchen"}
+    label: "The new name is saved on the server"
+- extendedWaitUntil:
+    notVisible: "Team name updated"
+    timeout: 8000
+# An empty name is refused
+- tapOn:
+    id: "team-edit"
+- tapOn:
+    id: "team-title"
+- runScript: ../../scripts/probe-cursor-end.js
+- eraseText: 100
+- hideKeyboard
+- tapOn:
+    id: "team-edit"
+- extendedWaitUntil:
+    visible: "The team name must be 1 to 50 characters\\."
+    timeout: 10000
+- runScript:
+    file: ../../scripts/probe-team.js
+    env:
+      TEAM: ""
+      USER: "e2e00000-0000-0000-0000-000000000022"
+- assertTrue:
+    condition: ${output.teamTitle === "Creator Kitchen"}
+    label: "The name is unchanged on the server"
+- extendedWaitUntil:
+    notVisible: "The team name must be 1 to 50 characters\\."
+    timeout: 8000
+# Put the name back (still editing). It's the saved name again, so saving
+# only leaves edit mode and nothing is sent
+- runFlow:
+    file: ../../subflows/replace-text.yaml
+    env:
+      ID: "team-title"
+      TEXT: "Creator Kitchen"
+- hideKeyboard
+- tapOn:
+    id: "team-edit"
+- assertVisible:
+    id: "team-title"
+    text: "Creator Kitchen"
+    enabled: false
+- assertNotVisible: "Team name updated"
+
+# 4. The invite code
+- tapOn:
+    id: "team-invite"
+- extendedWaitUntil:
+    visible: "Temporary invite code"
+    timeout: 10000
+- assertVisible: "The code is valid for about 5 minutes\\."
+- extendedWaitUntil:
+    visible:
+      id: "invite-code"
+      text: "[0-9]{8}"
+    timeout: 10000
+- retry:
+    maxRetries: 5
+    commands:
+      - runScript:
+          file: ../../scripts/probe-team.js
+          env:
+            TEAM: ""
+            USER: "e2e00000-0000-0000-0000-000000000022"
+      - assertTrue:
+          condition: ${/^\d\d\d\d\d\d\d\d$/.test(output.teamInviteCodes) && output.teamInviteRows === 1 && output.teamInviteSecondsLeft >= 240 && output.teamInviteSecondsLeft <= 300}
+          label: "One unexpired 8-digit invite, valid for about 5 minutes"
+- evalScript: ${output.firstCode = output.teamInviteCodes}
+- assertVisible:
+    id: "invite-code"
+    text: ${output.firstCode}
+- tapOn: "Got it"
+- extendedWaitUntil:
+    notVisible: "Temporary invite code"
+    timeout: 5000
+# Reopened, it's the same code and no new row
+- tapOn:
+    id: "team-invite"
+- extendedWaitUntil:
+    visible: "Temporary invite code"
+    timeout: 10000
+- assertVisible:
+    id: "invite-code"
+    text: ${output.firstCode}
+- runScript:
+    file: ../../scripts/probe-team.js
+    env:
+      TEAM: ""
+      USER: "e2e00000-0000-0000-0000-000000000022"
+- assertTrue:
+    condition: ${output.teamInviteRows === 1 && output.teamInviteCodes === output.firstCode}
+    label: "Still the one invite"
+- tapOn: "Got it"
+- extendedWaitUntil:
+    notVisible: "Temporary invite code"
+    timeout: 5000
+# 5 minutes pass: a new code, and the old one is deleted
+- runScript:
+    file: ../../scripts/age-invites.js
+    env:
+      TEAM: ${output.firstTeamId}
+      SECONDS: "301"
+- runScript:
+    file: ../../scripts/probe-team.js
+    env:
+      TEAM: ""
+      USER: "e2e00000-0000-0000-0000-000000000022"
+- assertTrue:
+    condition: ${output.teamInviteCodes === "" && output.teamInviteRows === 1}
+    label: "The code has expired"
+- tapOn:
+    id: "team-invite"
+- extendedWaitUntil:
+    visible: "Temporary invite code"
+    timeout: 10000
+- extendedWaitUntil:
+    visible:
+      id: "invite-code"
+      text: "[0-9]{8}"
+    timeout: 10000
+- retry:
+    maxRetries: 5
+    commands:
+      - runScript:
+          file: ../../scripts/probe-team.js
+          env:
+            TEAM: ""
+            USER: "e2e00000-0000-0000-0000-000000000022"
+      - assertTrue:
+          condition: ${/^\d\d\d\d\d\d\d\d$/.test(output.teamInviteCodes) && output.teamInviteCodes !== output.firstCode && output.teamInviteRows === 1 && output.teamInviteSecondsLeft >= 240}
+          label: "A different code, and the expired one is gone"
+- evalScript: ${output.secondCode = output.teamInviteCodes}
+- assertVisible:
+    id: "invite-code"
+    text: ${output.secondCode}
+- tapOn: "Got it"
+- extendedWaitUntil:
+    notVisible: "Temporary invite code"
+    timeout: 5000
+
+# 5. A host can't join another team
+- tapOn: "Account"
+- scrollUntilVisible:
+    element:
+      id: "join-team"
+    direction: UP
+- tapOn:
+    id: "join-team"
+- extendedWaitUntil:
+    visible: "Enter team code"
+    timeout: 5000
+- runFlow:
+    file: ../../subflows/type-team-code.yaml
+    env:
+      CODE: ${output.secondCode}
+- extendedWaitUntil:
+    visible: "You manage a team, so you can't join another one\\."
+    timeout: 10000
+- assertVisible: "Enter team code"
+- runScript:
+    file: ../../scripts/probe-team.js
+    env:
+      TEAM: ""
+      USER: "e2e00000-0000-0000-0000-000000000022"
+- assertTrue:
+    condition: ${output.teamHost === "e2e00000-0000-0000-0000-000000000022" && output.teamMembers === "" && output.teamId === output.firstTeamId}
+    label: "Still the host, and not a member of anything"
+- back
+- waitForAnimationToEnd
+
+# 6. After a relaunch
+- stopApp
+- launchApp
+- extendedWaitUntil:
+    visible: "Hello, Creator Cook!"
+    timeout: 20000
+# The tab stays locked until the team has loaded
+- retry:
+    maxRetries: 5
+    commands:
+      - tapOn: "Team"
+      - extendedWaitUntil:
+          visible: "The culinary team"
+          timeout: 4000
+- assertVisible:
+    id: "team-title"
+    text: "Creator Kitchen"
+- assertVisible: "Members: 1"
+- tapOn: "Account"
+- scrollUntilVisible:
+    element:
+      id: "setting-collaborativeTeam"
+- assertVisible:
+    id: "setting-collaborativeTeam"
+    checked: true
+    enabled: false
+
+# 7. Deleting the team
+- tapOn: "Team"
+- extendedWaitUntil:
+    visible: "The culinary team"
+    timeout: 10000
+- tapOn:
+    id: "team-leave"
+- extendedWaitUntil:
+    visible: "Delete team"
+    timeout: 5000
+- assertVisible: "Are you sure you want to delete the team\\? All members will leave it, but everyone's recipes will stay safe\\."
+- tapOn:
+    id: "alert-cancel"
+- extendedWaitUntil:
+    notVisible: "Delete team"
+    timeout: 5000
+- assertVisible: "The culinary team"
+- runScript:
+    file: ../../scripts/probe-team.js
+    env:
+      TEAM: ""
+      USER: "e2e00000-0000-0000-0000-000000000022"
+- assertTrue:
+    condition: ${output.teamExists && output.teamId === output.firstTeamId}
+    label: "Cancel kept the team"
+- tapOn:
+    id: "team-leave"
+- extendedWaitUntil:
+    visible: "Delete team"
+    timeout: 5000
+- tapOn:
+    id: "alert-destructive"
+- extendedWaitUntil:
+    visible: "The team was deleted since no Premium member was left to manage it\\."
+    timeout: 15000
+- assertNotVisible: "The culinary team"
+- assertVisible:
+    text: "Account"
+    selected: true
+- scrollUntilVisible:
+    element:
+      id: "setting-collaborativeTeam"
+- assertVisible:
+    id: "setting-collaborativeTeam"
+    checked: false
+    enabled: true
+- runScript:
+    file: ../../scripts/probe-team.js
+    env:
+      TEAM: ${output.firstTeamId}
+      USER: ""
+- assertTrue:
+    condition: ${!output.teamExists}
+    label: "The team is deleted on the server"
+- runScript:
+    file: ../../scripts/probe-team.js
+    env:
+      TEAM: ""
+      USER: "e2e00000-0000-0000-0000-000000000022"
+- assertTrue:
+    condition: ${!output.teamExists}
+    label: "The creator has no team"
+- tapOn: "Team"
+- assertVisible: "Join or create a team from the Account tab first"
+- waitForAnimationToEnd
+- assertNotVisible: "The culinary team"
+
+# 8. A new team
+- tapOn: "Account"
+- scrollUntilVisible:
+    element:
+      id: "setting-collaborativeTeam"
+- tapOn:
+    id: "setting-collaborativeTeam"
+- extendedWaitUntil:
+    visible: "The culinary team"
+    timeout: 15000
+- assertVisible:
+    id: "team-title"
+    text: "New team"
+- assertVisible: "Members: 1"
+- retry:
+    maxRetries: 5
+    commands:
+      - runScript:
+          file: ../../scripts/probe-team.js
+          env:
+            TEAM: ""
+            USER: "e2e00000-0000-0000-0000-000000000022"
+      - assertTrue:
+          condition: ${output.teamExists && output.teamTitle === "New team" && output.teamId !== output.firstTeamId}
+          label: "A new team, not the deleted one"

@@ -1,0 +1,189 @@
+# A free account's recipes stay on the device, and logging out deletes them.
+#
+# Checks:
+#   1. A recipe created while logged in to a free account is saved in the
+#      app's storage on the device under the account's id, and nothing of it
+#      reaches local Supabase (no recipe requests, no rows)
+#   2. The session survives a relaunch: still logged in, recipe still there
+#   3. Logging out warns that the recipes are only on this device. Cancel
+#      keeps the account and the recipe.
+#   4. Confirming logs out: a guest's empty recipes screen, the login form on
+#      the Account tab, no recipes left in the app's storage (so not just
+#      hidden), the session revoked on the server. The same after a relaunch.
+#
+# A free account's recipes wait in the upload queue (cloud sync is off), and
+# logging out with a queued upload restarts the app to drop it, so it lands
+# on the recipes screen, not the login form, and without the "logged out"
+# toast. Accepted as is.
+appId: com.matamim.app.e2e
+name: Free - recipes stay on the device, logout deletes them
+tags:
+  - free
+  - smoke
+---
+- runScript: ../../scripts/probe-now.js
+- evalScript: ${output.flowStart = output.since}
+- launchApp:
+    clearState: true
+- extendedWaitUntil:
+    visible: "Create my first recipe"
+    timeout: 20000
+- runFlow:
+    file: ../../subflows/login.yaml
+    env:
+      EMAIL: "local@e2e.test"
+      NAME: "Local Cook"
+- tapOn: "Recipes"
+- assertVisible: "Hello, Local Cook!"
+- assertVisible: "Create my first recipe"
+- runScript: ../../scripts/probe-device-recipes.js
+- assertTrue:
+    condition: ${output.deviceRecipeCount === 0}
+    label: "No recipes on the device at the start"
+
+# 1. Created under the account, on the device only
+- tapOn: "Create my first recipe"
+- runFlow:
+    file: ../../subflows/create-recipe.yaml
+    env:
+      NAME: "Local Soup"
+- assertVisible: "Hello, Local Cook!"
+- runScript: ../../scripts/probe-device-recipes.js
+- assertTrue:
+    condition: ${output.deviceRecipeNames === "Local Soup" && output.deviceRecipeOwners === "e2e00000-0000-0000-0000-000000000003"}
+    label: "On the device, the recipe belongs to the account"
+- runScript:
+    file: ../../scripts/probe-cloud-requests.js
+    env:
+      SINCE: ${output.flowStart}
+      PATHS: "/rest/v1/recipes,/storage/v1"
+- assertTrue:
+    condition: ${output.cloudRequests === 0}
+    label: "No recipe or photo requests reached local Supabase"
+- runScript:
+    file: ../../scripts/probe-user-rows.js
+    env:
+      USER: "e2e00000-0000-0000-0000-000000000003"
+- assertTrue:
+    condition: ${output.rows_public_recipes === 0}
+    label: "No recipe rows for the account"
+
+# 2. Still logged in after a relaunch, with the recipe
+- stopApp
+- launchApp
+- extendedWaitUntil:
+    visible: "Hello, Local Cook!"
+    timeout: 20000
+- assertVisible: "Local Soup"
+- tapOn: "Account"
+- assertVisible: "local@e2e\\.test"
+- assertVisible: "Change username"
+- assertNotVisible:
+    id: "account-submit"
+- runScript: ../../scripts/probe-device-recipes.js
+- assertTrue:
+    condition: ${output.deviceRecipeNames === "Local Soup" && output.deviceRecipeOwners === "e2e00000-0000-0000-0000-000000000003"}
+    label: "After the relaunch, the recipe is still the account's"
+# The session is still the server's too
+- runScript:
+    file: ../../scripts/probe-user-rows.js
+    env:
+      USER: "e2e00000-0000-0000-0000-000000000003"
+- assertTrue:
+    condition: ${output.rows_auth_sessions === 1}
+    label: "One session on the server"
+
+# 3. Logging out warns first, Cancel keeps everything
+- scrollUntilVisible:
+    element: "Delete account"
+- tapOn: "Log out"
+- extendedWaitUntil:
+    visible: "(?s)Your recipes are saved only on this device, not in the cloud\\. Logging out deletes them from this device, and they can't be restored\\..*"
+    timeout: 5000
+- tapOn:
+    id: "alert-cancel"
+- extendedWaitUntil:
+    notVisible: "(?s)Your recipes are saved only on this device.*"
+    timeout: 5000
+- assertVisible: "local@e2e\\.test"
+- assertVisible: "Change username"
+- runScript: ../../scripts/probe-device-recipes.js
+- assertTrue:
+    condition: ${output.deviceRecipeNames === "Local Soup"}
+    label: "Cancel kept the recipe on the device"
+- runScript:
+    file: ../../scripts/probe-user-rows.js
+    env:
+      USER: "e2e00000-0000-0000-0000-000000000003"
+- assertTrue:
+    condition: ${output.rows_auth_sessions === 1}
+    label: "Cancel kept the session on the server"
+- tapOn: "Recipes"
+- assertVisible: "Hello, Local Cook!"
+- assertVisible: "Local Soup"
+
+# 4. Confirming logs out and deletes the recipe from the device. The recipe
+#    is queued to upload, so the app restarts (see the top).
+- runScript: ../../scripts/probe-device-recipes.js
+- assertTrue:
+    condition: ${output.devicePending === 1}
+    label: "The recipe waits in the upload queue"
+- tapOn: "Account"
+- scrollUntilVisible:
+    element: "Delete account"
+- tapOn: "Log out"
+- extendedWaitUntil:
+    visible: "(?s)Your recipes are saved only on this device.*"
+    timeout: 5000
+- assertVisible:
+    id: "alert-destructive"
+    text: "Log out"
+- tapOn:
+    id: "alert-destructive"
+- extendedWaitUntil:
+    visible: "Hello, Anonymous Chef!"
+    timeout: 20000
+- assertVisible: "Create my first recipe"
+- assertNotVisible: "Local Soup"
+- tapOn: "Account"
+- assertVisible:
+    id: "account-submit"
+- assertVisible: "Forgot your password\\?"
+- assertNotVisible: "local@e2e\\.test"
+- runScript: ../../scripts/probe-device-recipes.js
+- assertTrue:
+    condition: ${output.deviceRecipeCount === 0 && output.devicePending === 0 && output.deviceTeamRecipeCount === 0}
+    label: "No recipes, and nothing waiting to upload, left on the device"
+- runScript:
+    file: ../../scripts/probe-user-rows.js
+    env:
+      USER: "e2e00000-0000-0000-0000-000000000003"
+- assertTrue:
+    condition: ${output.rows_auth_sessions === 0 && output.rows_auth_users === 1}
+    label: "The session is revoked on the server, the account still exists"
+
+# 4. Still logged out and empty after a relaunch
+- stopApp
+- launchApp
+- extendedWaitUntil:
+    visible: "Hello, Anonymous Chef!"
+    timeout: 20000
+- assertVisible: "Create my first recipe"
+- assertNotVisible: "Local Soup"
+- runScript: ../../scripts/probe-device-recipes.js
+- assertTrue:
+    condition: ${output.deviceRecipeCount === 0}
+    label: "After the relaunch, still no recipes on the device"
+- tapOn: "Account"
+- assertVisible:
+    id: "account-submit"
+
+# Nothing of the recipe ever reached local Supabase
+- runScript:
+    file: ../../scripts/probe-cloud-requests.js
+    env:
+      SINCE: ${output.flowStart}
+      PATHS: "/rest/v1/recipes,/storage/v1"
+- assertTrue:
+    condition: ${output.cloudRequests === 0}
+    label: "No recipe or photo requests reached local Supabase"

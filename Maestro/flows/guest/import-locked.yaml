@@ -1,0 +1,81 @@
+# A guest can't use AI import. Each way in explains it needs an account
+# instead of opening the import.
+#
+# Checks:
+#   5. "AI import" on the new recipe form shows "Log in to try importing"
+#   6. "Import from a link" and "Import from a photo" in the create menu open
+#      the new recipe form with "Log in to try importing" already up
+#   Plus: its "Log in" button opens the login form
+appId: com.matamim.app.e2e
+name: Guest - AI import is locked
+tags:
+  - guest
+---
+- launchApp:
+    clearState: true
+- extendedWaitUntil:
+    visible: "Create my first recipe"
+    timeout: 20000
+
+# 5. From the form
+- tapOn: "Create my first recipe"
+- assertVisible:
+    id: "recipe-title"
+- assertNotVisible: "Log in to try importing"
+- tapOn:
+    id: "ai-import"
+- assertVisible: "Log in to try importing"
+- assertVisible: "Create a free account and import your first 3 recipes from the web or a photo for free."
+- assertNotVisible: "Import a recipe"
+- tapOn: "Cancel"
+- assertNotVisible: "Log in to try importing"
+- assertNotVisible: "Import a recipe"
+- assertVisible:
+    id: "recipe-title"
+- tapOn: "Back"
+- assertVisible:
+    text: "Recipes"
+    selected: true
+
+# 6a. Import from a link, from the create menu
+- tapOn:
+    id: "tab-create"
+- assertVisible: "What are we making\\?"
+- tapOn: "Import from a link"
+- assertVisible: "Log in to try importing"
+- assertNotVisible: "What are we making\\?"
+- assertNotVisible: "Import a recipe"
+- assertVisible:
+    id: "create-recipe"
+- tapOn: "Cancel"
+- assertNotVisible: "Log in to try importing"
+- assertNotVisible: "Import a recipe"
+- assertVisible:
+    id: "recipe-title"
+- assertVisible:
+    id: "create-recipe"
+- tapOn: "Back"
+- assertVisible:
+    text: "Recipes"
+    selected: true
+
+# 6b. Import from a photo, from the create menu
+- tapOn:
+    id: "tab-create"
+- assertVisible: "What are we making\\?"
+- tapOn: "Import from a photo"
+- assertVisible: "Log in to try importing"
+- assertNotVisible: "What are we making\\?"
+- assertNotVisible: "Import a recipe"
+- assertNotVisible: "Take a photo"
+- assertVisible:
+    id: "recipe-title"
+
+# Its "Log in" button opens the login form
+- tapOn: "Log in"
+- assertNotVisible: "Log in to try importing"
+- assertVisible:
+    text: "Account"
+    selected: true
+- assertVisible: "Email"
+- assertVisible: "Password"

@@ -1,0 +1,314 @@
+# A free account's settings, and changing its name.
+#
+# Checks:
+#   1. Keep screen on (on by default): an open recipe keeps the screen on,
+#      Android's FLAG_KEEP_SCREEN_ON on the app's window, and the recipes
+#      screen doesn't. Turning it on is asynchronous, so "off" means it
+#      stayed off for 3 s. Turned off, an open recipe doesn't keep it on, also
+#      after a relaunch. Turned back on, it does again.
+#   2. Cloud sync can't be turned on without Premium: "Cloud sync is part of
+#      Premium", the switch stays off, and "Go Premium" opens the Premium
+#      screen. Shared team can't be turned on without cloud sync: "Cloud sync
+#      required", the switch stays off.
+#   3. Change username refuses what sign up refuses (empty, 1 letter, 31
+#      letters, digits, symbols), with sign up's messages, and nothing is
+#      saved. 30 letters is saved. A valid name, typed with spaces around it, is saved without
+#      them: the "Name updated" toast, the Account tab and the recipes
+#      screen's greeting, and in the database both Auth's display name and
+#      profiles.username. Kept after a relaunch.
+appId: com.matamim.app.e2e
+name: Free - account settings and changing the name
+tags:
+  - free
+---
+- launchApp:
+    clearState: true
+- extendedWaitUntil:
+    visible: "Create my first recipe"
+    timeout: 20000
+- runFlow:
+    file: ../../subflows/login.yaml
+    env:
+      EMAIL: "settings@e2e.test"
+      NAME: "Settings Cook"
+- tapOn: "Recipes"
+- tapOn: "Create my first recipe"
+- runFlow:
+    file: ../../subflows/create-meal-recipe.yaml
+    env:
+      NAME: "Awake Stew"
+      MEAL: "Dinner"
+
+# 1. On by default: an open recipe keeps the screen on, the list doesn't
+- runScript:
+    file: ../../scripts/probe-keep-screen-on.js
+    env:
+      WATCH: "3"
+- assertTrue:
+    condition: ${output.keepsScreenOn === false}
+    label: "The recipes screen doesn't keep the screen on"
+- tapOn: "Awake Stew"
+- assertVisible:
+    id: "property-meal-value"
+    text: "Dinner"
+- runScript:
+    file: ../../scripts/probe-keep-screen-on.js
+    env:
+      WATCH: "3"
+- assertTrue:
+    condition: ${output.keepsScreenOn === true}
+    label: "An open recipe keeps the screen on"
+- tapOn: "Account"
+- assertVisible:
+    id: "setting-keepScreenAwake"
+    checked: true
+- runScript:
+    file: ../../scripts/probe-keep-screen-on.js
+    env:
+      WATCH: "3"
+- assertTrue:
+    condition: ${output.keepsScreenOn === false}
+    label: "Leaving the recipe lets the screen turn off"
+
+# 1. Turned off
+- tapOn:
+    id: "setting-keepScreenAwake"
+- assertVisible:
+    id: "setting-keepScreenAwake"
+    checked: false
+- tapOn: "Recipes"
+- tapOn: "Awake Stew"
+- assertVisible:
+    id: "property-meal-value"
+    text: "Dinner"
+- runScript:
+    file: ../../scripts/probe-keep-screen-on.js
+    env:
+      WATCH: "3"
+- assertTrue:
+    condition: ${output.keepsScreenOn === false}
+    label: "With the setting off, an open recipe doesn't keep the screen on"
+
+# 1. Still off after a relaunch
+- stopApp
+- launchApp
+- extendedWaitUntil:
+    visible: "Hello, Settings Cook!"
+    timeout: 20000
+- tapOn: "Awake Stew"
+- assertVisible:
+    id: "property-meal-value"
+    text: "Dinner"
+- runScript:
+    file: ../../scripts/probe-keep-screen-on.js
+    env:
+      WATCH: "3"
+- assertTrue:
+    condition: ${output.keepsScreenOn === false}
+    label: "After a relaunch, still off"
+- tapOn: "Account"
+- assertVisible:
+    id: "setting-keepScreenAwake"
+    checked: false
+
+# 1. Back on
+- tapOn:
+    id: "setting-keepScreenAwake"
+- assertVisible:
+    id: "setting-keepScreenAwake"
+    checked: true
+- tapOn: "Recipes"
+- tapOn: "Awake Stew"
+- assertVisible:
+    id: "property-meal-value"
+    text: "Dinner"
+- runScript:
+    file: ../../scripts/probe-keep-screen-on.js
+    env:
+      WATCH: "3"
+- assertTrue:
+    condition: ${output.keepsScreenOn === true}
+    label: "Turned back on, an open recipe keeps the screen on"
+
+# 2. Cloud sync needs Premium
+- tapOn: "Account"
+- assertVisible:
+    id: "setting-cloudSync"
+    checked: false
+- tapOn:
+    id: "setting-cloudSync"
+- extendedWaitUntil:
+    visible: "Cloud sync is part of Premium"
+    timeout: 5000
+- assertVisible: "Upgrade to Premium to back up your recipes to the cloud and share them with your team\\."
+- tapOn:
+    id: "alert-cancel"
+- extendedWaitUntil:
+    notVisible: "Cloud sync is part of Premium"
+    timeout: 5000
+- assertVisible:
+    id: "setting-cloudSync"
+    checked: false
+# "Go Premium" opens the Premium screen
+- tapOn:
+    id: "setting-cloudSync"
+- extendedWaitUntil:
+    visible: "Go Premium"
+    timeout: 5000
+- tapOn: "Go Premium"
+- extendedWaitUntil:
+    visible:
+      text: "Premium"
+      selected: true
+    timeout: 5000
+- scrollUntilVisible:
+    element: "Purchase"
+- tapOn: "Account"
+- assertVisible:
+    id: "setting-cloudSync"
+    checked: false
+
+# 2. Shared team needs cloud sync
+- assertVisible:
+    id: "setting-collaborativeTeam"
+    checked: false
+- tapOn:
+    id: "setting-collaborativeTeam"
+- extendedWaitUntil:
+    visible: "Cloud sync required"
+    timeout: 5000
+- assertVisible: "To create a shared team, turn on cloud sync first so team members can see your recipes\\."
+- tapOn:
+    id: "alert-cancel"
+- extendedWaitUntil:
+    notVisible: "Cloud sync required"
+    timeout: 5000
+- assertVisible:
+    id: "setting-collaborativeTeam"
+    checked: false
+- assertVisible:
+    id: "setting-cloudSync"
+    checked: false
+- runScript:
+    file: ../../scripts/probe-user-rows.js
+    env:
+      USER: "e2e00000-0000-0000-0000-000000000006"
+- assertTrue:
+    condition: ${output.rows_public_teams === 0 && output.rows_public_team_members === 0}
+    label: "No team on the server"
+
+# 3. Change username: what sign up refuses
+- tapOn: "Change username"
+- extendedWaitUntil:
+    visible: "Change name"
+    timeout: 5000
+- tapOn:
+    id: "update-save"
+- assertVisible: "Full name is required\\."
+- tapOn:
+    id: "update-input"
+- inputText: "A"
+- tapOn:
+    id: "update-save"
+- assertVisible: "Name must be at least 2 characters\\."
+- runFlow:
+    file: ../../subflows/replace-text.yaml
+    env:
+      ID: "update-input"
+      TEXT: "Abcdefghij Abcdefghij Abcdefghi"
+- tapOn:
+    id: "update-save"
+- assertVisible: "Name can be at most 30 characters\\."
+- runFlow:
+    file: ../../subflows/replace-text.yaml
+    env:
+      ID: "update-input"
+      TEXT: "Settings Cook2"
+- tapOn:
+    id: "update-save"
+- assertVisible: "Name can only contain letters and spaces \\(no numbers or symbols\\)\\."
+- runFlow:
+    file: ../../subflows/replace-text.yaml
+    env:
+      ID: "update-input"
+      TEXT: "Settings-Cook"
+- tapOn:
+    id: "update-save"
+- assertVisible: "Name can only contain letters and spaces \\(no numbers or symbols\\)\\."
+- assertNotVisible: "Name updated"
+# Nothing was saved
+- runScript:
+    file: ../../scripts/probe-account.js
+    env:
+      USER: "e2e00000-0000-0000-0000-000000000006"
+- assertTrue:
+    condition: ${output.displayName === "Settings Cook" && output.profileUsername === "Settings Cook"}
+    label: "The refused names weren't saved"
+
+# 3. 30 letters, the most allowed, is saved
+- runFlow:
+    file: ../../subflows/replace-text.yaml
+    env:
+      ID: "update-input"
+      TEXT: "Abcdefghij Abcdefghij Abcdefgh"
+- tapOn:
+    id: "update-save"
+- extendedWaitUntil:
+    visible: "Name updated"
+    timeout: 10000
+- extendedWaitUntil:
+    notVisible: "Change name"
+    timeout: 5000
+- assertVisible: "Abcdefghij Abcdefghij Abcdefgh"
+- runScript:
+    file: ../../scripts/probe-account.js
+    env:
+      USER: "e2e00000-0000-0000-0000-000000000006"
+- assertTrue:
+    condition: ${output.displayName === "Abcdefghij Abcdefghij Abcdefgh" && output.profileUsername === "Abcdefghij Abcdefghij Abcdefgh"}
+    label: "The 30 letter name is saved"
+# The toast is gone before the next save, so the next one is its own
+- extendedWaitUntil:
+    notVisible: "Name updated"
+    timeout: 10000
+
+# 3. A valid name, with spaces around it
+- tapOn: "Change username"
+- extendedWaitUntil:
+    visible: "Change name"
+    timeout: 5000
+- runFlow:
+    file: ../../subflows/replace-text.yaml
+    env:
+      ID: "update-input"
+      TEXT: "  Noa Cohen  "
+- tapOn:
+    id: "update-save"
+- extendedWaitUntil:
+    visible: "Name updated"
+    timeout: 10000
+- assertNotVisible: "Username changed!"
+- extendedWaitUntil:
+    notVisible: "Change name"
+    timeout: 5000
+- assertVisible: "Noa Cohen"
+- assertNotVisible: "Abcdefghij Abcdefghij Abcdefgh"
+- runScript:
+    file: ../../scripts/probe-account.js
+    env:
+      USER: "e2e00000-0000-0000-0000-000000000006"
+- assertTrue:
+    condition: ${output.displayName === "Noa Cohen" && output.profileUsername === "Noa Cohen"}
+    label: "Saved without the spaces, in Auth and in profiles"
+- tapOn: "Recipes"
+- assertVisible: "Hello, Noa Cohen!"
+
+# 3. Kept after a relaunch
+- stopApp
+- launchApp
+- extendedWaitUntil:
+    visible: "Hello, Noa Cohen!"
+    timeout: 20000
+- tapOn: "Account"
+- assertVisible: "Noa Cohen"
+- assertNotVisible: "Settings Cook"

@@ -1,0 +1,274 @@
+# A free account joins a team with an invite code. Wrong, expired and
+# second-team codes are refused, a member can't manage the team, and it all
+# survives a relaunch.
+#
+# Seed: joiner@ is free with no team. joinhost@ (premium) hosts Join Team with
+# Welcome Soup, otherhost@ (premium) hosts Other Team. Both hosts are driven
+# through the probe, only joiner@ uses the app.
+#
+# Checks:
+#   1. A code that doesn't exist is refused and nothing is joined. The 8
+#      digits can be erased (a new code is only accepted if they were). That
+#      they stay on screen isn't asserted, the digits have no testID.
+#   2. An expired code is refused the same way
+#   3. A valid code joins: Team tab with the title, 2 members, the host as
+#      Premium Head chef without an email, the member with its own email and
+#      without Premium
+#   4. A member can't edit, invite or remove (no controls, and the server
+#      refuses each when called directly, leaving the team unchanged). The
+#      notice says the member's recipes stay on the device.
+#   5. The team's recipe, Welcome Soup, is on the recipes screen
+#   6. A member can't join a second team
+#   7. Shared team shows on and locked
+#   8. After a relaunch the team and its recipe are still there
+appId: com.matamim.app.e2e
+name: Team - join with an invite code
+tags:
+  - team
+---
+- launchApp:
+    clearState: true
+- extendedWaitUntil:
+    visible: "Create my first recipe"
+    timeout: 20000
+- runFlow:
+    file: ../../subflows/login.yaml
+    env:
+      EMAIL: "joiner@e2e.test"
+      NAME: "Joiner Cook"
+# The greeting toast covers the top left, where the join button is
+- extendedWaitUntil:
+    notVisible: "Hi Joiner Cook!"
+    timeout: 8000
+
+# 1. A code that doesn't exist
+- tapOn: "Account"
+- scrollUntilVisible:
+    element:
+      id: "join-team"
+    direction: UP
+- tapOn:
+    id: "join-team"
+- extendedWaitUntil:
+    visible: "Enter team code"
+    timeout: 5000
+- runFlow:
+    file: ../../subflows/type-team-code.yaml
+    env:
+      CODE: "00000000"
+- extendedWaitUntil:
+    visible: "This invite code doesn't exist or has expired\\."
+    timeout: 10000
+- assertVisible: "Enter team code"
+- runScript:
+    file: ../../scripts/probe-team.js
+    env:
+      TEAM: ""
+      USER: "e2e00000-0000-0000-0000-000000000024"
+- assertTrue:
+    condition: ${!output.teamExists}
+    label: "Joiner belongs to no team"
+- extendedWaitUntil:
+    notVisible: "This invite code doesn't exist or has expired\\."
+    timeout: 8000
+- runFlow: ../../subflows/clear-team-code.yaml
+
+# 2. An expired code
+- runScript:
+    file: ../../scripts/as-user.js
+    env:
+      EMAIL: "joinhost@e2e.test"
+      FN: "generate-invite"
+- evalScript: ${output.expiredCode = output.inviteCode}
+- assertTrue:
+    condition: ${/^\d\d\d\d\d\d\d\d$/.test(output.expiredCode)}
+    label: "The host got a code"
+- runScript:
+    file: ../../scripts/age-invites.js
+    env:
+      TEAM: "e2e7ea00-0000-0000-0000-000000000023"
+      SECONDS: "301"
+- runScript:
+    file: ../../scripts/probe-team.js
+    env:
+      TEAM: "e2e7ea00-0000-0000-0000-000000000023"
+      USER: ""
+- assertTrue:
+    condition: ${output.teamInviteCodes === '' && output.teamInviteRows === 1}
+    label: "The code has expired"
+- runFlow:
+    file: ../../subflows/type-team-code.yaml
+    env:
+      CODE: ${output.expiredCode}
+- extendedWaitUntil:
+    visible: "This invite code doesn't exist or has expired\\."
+    timeout: 10000
+- assertVisible: "Enter team code"
+- runScript:
+    file: ../../scripts/probe-team.js
+    env:
+      TEAM: ""
+      USER: "e2e00000-0000-0000-0000-000000000024"
+- assertTrue:
+    condition: ${!output.teamExists}
+    label: "Joiner belongs to no team"
+- extendedWaitUntil:
+    notVisible: "This invite code doesn't exist or has expired\\."
+    timeout: 8000
+- runFlow: ../../subflows/clear-team-code.yaml
+
+# 3. A valid code
+- runScript:
+    file: ../../scripts/as-user.js
+    env:
+      EMAIL: "joinhost@e2e.test"
+      FN: "generate-invite"
+- assertTrue:
+    condition: ${/^\d\d\d\d\d\d\d\d$/.test(output.inviteCode) && output.inviteCode !== output.expiredCode}
+    label: "A new code, not the expired one"
+- evalScript: ${output.validCode = output.inviteCode}
+- runFlow:
+    file: ../../subflows/type-team-code.yaml
+    env:
+      CODE: ${output.validCode}
+- extendedWaitUntil:
+    visible: "The culinary team"
+    timeout: 15000
+- assertVisible:
+    id: "team-title"
+    text: "Join Team"
+- assertVisible: "Members: 2"
+- assertVisible:
+    id: "team-member"
+    text: "Join Host, Premium, Head chef"
+- assertVisible:
+    id: "team-member"
+    text: "Joiner Cook, joiner@e2e.test"
+- assertNotVisible: ".*joinhost@e2e.test.*"
+- runScript:
+    file: ../../scripts/probe-team.js
+    env:
+      TEAM: "e2e7ea00-0000-0000-0000-000000000023"
+      USER: ""
+- assertTrue:
+    condition: ${output.teamMembers === 'e2e00000-0000-0000-0000-000000000024' && output.teamHost === 'e2e00000-0000-0000-0000-000000000023'}
+    label: "Joiner is the only member of Join Team"
+- evalScript: ${output.invitesBefore = output.teamInviteRows}
+- evalScript: ${output.titleBefore = output.teamTitle}
+
+# 4. A member can't manage the team
+- assertVisible:
+    id: "team-leave"
+- assertNotVisible:
+    id: "team-edit"
+- assertNotVisible:
+    id: "team-invite"
+- assertVisible: "You can see the team's recipes, but your recipes are saved only on this device and your teammates can't see them\\."
+- assertVisible: "Upgrade to Premium"
+- runScript:
+    file: ../../scripts/as-user.js
+    env:
+      EMAIL: "joiner@e2e.test"
+      FN: "edit-team"
+      BODY: '{"team_id": "e2e7ea00-0000-0000-0000-000000000023", "title": "Hijacked"}'
+- assertTrue:
+    condition: ${output.asUserStatus >= 400 && output.asUserStatus < 500 && JSON.stringify(output.asUserBody).indexOf("NOT_TEAM_HOST") !== -1}
+    label: "edit-team is refused for a member"
+- runScript:
+    file: ../../scripts/as-user.js
+    env:
+      EMAIL: "joiner@e2e.test"
+      FN: "generate-invite"
+- assertTrue:
+    condition: ${output.asUserStatus >= 400 && output.asUserStatus < 500 && JSON.stringify(output.asUserBody).indexOf("NOT_TEAM_HOST") !== -1}
+    label: "generate-invite is refused for a member"
+- runScript:
+    file: ../../scripts/as-user.js
+    env:
+      EMAIL: "joiner@e2e.test"
+      FN: "remove-member"
+      BODY: '{"user_id": "e2e00000-0000-0000-0000-000000000023"}'
+- assertTrue:
+    condition: ${output.asUserStatus >= 400 && output.asUserStatus < 500 && JSON.stringify(output.asUserBody).indexOf("NOT_TEAM_HOST") !== -1}
+    label: "remove-member is refused for a member"
+- runScript:
+    file: ../../scripts/probe-team.js
+    env:
+      TEAM: "e2e7ea00-0000-0000-0000-000000000023"
+      USER: ""
+- assertTrue:
+    condition: ${output.teamTitle === 'Join Team' && output.teamHost === 'e2e00000-0000-0000-0000-000000000023' && output.teamMembers === 'e2e00000-0000-0000-0000-000000000024' && output.teamInviteRows === output.invitesBefore}
+    label: "Nothing changed on the server"
+
+# 5. The team's recipe
+- tapOn: "Recipes"
+- extendedWaitUntil:
+    visible: "Welcome Soup"
+    timeout: 15000
+
+# 6. Not a second team
+- runScript:
+    file: ../../scripts/as-user.js
+    env:
+      EMAIL: "otherhost@e2e.test"
+      FN: "generate-invite"
+- assertTrue:
+    condition: ${/^\d\d\d\d\d\d\d\d$/.test(output.inviteCode)}
+    label: "The other host got a code"
+- evalScript: ${output.otherCode = output.inviteCode}
+- tapOn: "Account"
+- scrollUntilVisible:
+    element:
+      id: "join-team"
+    direction: UP
+- tapOn:
+    id: "join-team"
+- extendedWaitUntil:
+    visible: "Enter team code"
+    timeout: 5000
+- runFlow:
+    file: ../../subflows/type-team-code.yaml
+    env:
+      CODE: ${output.otherCode}
+- extendedWaitUntil:
+    visible: "You're already a member of another team\\."
+    timeout: 10000
+- assertVisible: "Enter team code"
+- runScript:
+    file: ../../scripts/probe-team.js
+    env:
+      TEAM: ""
+      USER: "e2e00000-0000-0000-0000-000000000024"
+- assertTrue:
+    condition: ${output.teamExists && output.teamId === 'e2e7ea00-0000-0000-0000-000000000023'}
+    label: "Still only in Join Team"
+- back
+- waitForAnimationToEnd
+
+# 7. Shared team is on and locked
+- tapOn: "Account"
+- scrollUntilVisible:
+    element:
+      id: "setting-collaborativeTeam"
+- assertVisible:
+    id: "setting-collaborativeTeam"
+    checked: true
+    enabled: false
+
+# 8. After a relaunch
+- stopApp
+- launchApp
+- extendedWaitUntil:
+    visible: "Welcome Soup"
+    timeout: 20000
+- retry:
+    maxRetries: 5
+    commands:
+      - tapOn: "Team"
+      - extendedWaitUntil:
+          visible: "The culinary team"
+          timeout: 4000
+- assertVisible:
+    id: "team-title"
+    text: "Join Team"
+- assertVisible: "Members: 2"

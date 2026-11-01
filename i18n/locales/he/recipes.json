@@ -1,0 +1,16 @@
+{
+  "prepTime": "{{minutes}} דקות הכנה",
+  "listFooter": "פה סיימנו, בחרו בתפריט <highlight>יצירה</highlight> כדי להוסיף לרשימה",
+  "localBadge": "רק אצלי",
+  "empty": {
+    "title": "ספר המתכונים ריק, אבל המטבח מחכה 🍗",
+    "createFirst": "ליצירת המתכון הראשון שלי"
+  },
+  "searchPlaceholder": "חפש/י מתכונים...",
+  "prepTimeShort": "{{minutes}} דק׳",
+  "noMatches": "לא נמצאו מתכונים לסינון שנבחר",
+  "cloud": {
+    "saved": "שמור בענן",
+    "deviceOnly": "שמור רק במכשיר הזה"
+  }
+}

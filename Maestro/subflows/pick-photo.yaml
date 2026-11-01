@@ -1,0 +1,30 @@
+# Picks the all-magenta photo for the recipe open in edit mode (new or
+# existing), through Android's photo picker. Puts it in the gallery first, as
+# the only photo. Waits until the form shows it.
+#
+# The photo area's button isn't in Maestro's view of the screen, so it's
+# tapped by position: the middle of the photo area at the top of the form.
+appId: com.matamim.app.e2e
+---
+- runScript: ../scripts/gallery-photo.js
+- tapOn:
+    point: "50%,15%"
+- extendedWaitUntil:
+    visible: "Photo taken on .*"
+    timeout: 10000
+- tapOn: "Photo taken on .*"
+- tapOn: "Done"
+- extendedWaitUntil:
+    notVisible: "Collections"
+    timeout: 10000
+# Saved (and with cloud sync on, uploaded) before it's shown
+- retry:
+    maxRetries: 10
+    commands:
+      - runScript:
+          file: ../scripts/probe-screen-color.js
+          env:
+            RGB: "ff00ff"
+      - assertTrue:
+          condition: ${output.screenColorShare > 0.05}
+          label: "The picked photo is shown in the form"

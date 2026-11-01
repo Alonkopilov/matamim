@@ -1,0 +1,325 @@
+# A premium account with cloud sync on edits and deletes recipes, and the
+# cloud follows.
+#
+# Seed: editor@ has cloud sync on, and in the cloud Editor Soup (a lunch with
+# the ingredient "Beets"), Magenta Pie (with an all-magenta photo) and
+# Editor Bread.
+#
+# Checks:
+#   1. An edit of the title, meal and ingredient is saved to the same row,
+#      and then nothing waits to upload on the device, without a relaunch
+#   2. A new photo replaces the old one in Storage: the recipe points to the
+#      new one, and the old one is deleted
+#   3. A deleted recipe is marked deleted in the cloud, and a deleted
+#      recipe's photo is deleted from Storage
+#   4. An edit made offline isn't sent while offline, and is saved to the
+#      cloud by itself once back online. Then nothing waits to upload.
+#   5. After a relaunch, the deleted recipes don't come back
+#   6. Logging out doesn't warn about unsynced recipes, and says so
+appId: com.matamim.app.e2e
+name: Premium - edits and deletions reach the cloud
+tags:
+  - premium
+onFlowComplete:
+  # Reconnects even when a check fails while offline
+  - setAirplaneMode: disabled
+  - runScript:
+      file: ../../scripts/probe-network.js
+      env:
+        STATE: "on"
+---
+- runScript:
+    file: ../../scripts/revenuecat-grant.js
+    env:
+      USER: "e2e00000-0000-0000-0000-000000000017"
+- launchApp:
+    clearState: true
+- extendedWaitUntil:
+    visible: "Create my first recipe"
+    timeout: 20000
+- runFlow:
+    file: ../../subflows/login.yaml
+    env:
+      EMAIL: "editor@e2e.test"
+      NAME: "Editor Cook"
+- tapOn: "Recipes"
+- runFlow:
+    file: ../../subflows/assert-card-cloud.yaml
+    env:
+      NAME: "Editor Soup"
+      CHIP: "Saved in the cloud"
+- runFlow:
+    file: ../../subflows/assert-card-cloud.yaml
+    env:
+      NAME: "Magenta Pie"
+      CHIP: "Saved in the cloud"
+- runFlow:
+    file: ../../subflows/assert-card-cloud.yaml
+    env:
+      NAME: "Editor Bread"
+      CHIP: "Saved in the cloud"
+- runScript:
+    file: ../../scripts/probe-cloud.js
+    env:
+      USER: "e2e00000-0000-0000-0000-000000000017"
+- evalScript: ${output.soupId = output.cloudRecipe["Editor Soup"].id}
+- assertTrue:
+    condition: ${output.cloudNames === "Editor Bread|Editor Soup|Magenta Pie" && output.cloudImages === "e2e00000-0000-0000-0000-000000000017/seed-magenta.jpg"}
+    label: "Starts with the three recipes and the photo in the cloud"
+
+# 1. Title, meal and ingredient
+- runFlow:
+    file: ../../subflows/find-card.yaml
+    env:
+      NAME: "Editor Soup"
+- tapOn: "Editor Soup"
+- tapOn: "Edit"
+- runFlow:
+    file: ../../subflows/replace-text.yaml
+    env:
+      ID: "recipe-title"
+      TEXT: "Edited Soup"
+- hideKeyboard
+- tapOn:
+    id: "property-meal"
+- tapOn: "Dinner"
+- assertVisible:
+    id: "property-meal"
+    text: "Dinner"
+- scrollUntilVisible:
+    element:
+      id: "ingredient-0-item"
+    centerElement: true
+- runFlow:
+    file: ../../subflows/replace-text.yaml
+    env:
+      ID: "ingredient-0-item"
+      TEXT: "Carrots"
+- hideKeyboard
+- tapOn:
+    id: "save-recipe"
+- extendedWaitUntil:
+    visible: "Recipe saved!"
+    timeout: 3000
+- tapOn: "Recipes"
+- runFlow:
+    file: ../../subflows/assert-card-cloud.yaml
+    env:
+      NAME: "Edited Soup"
+      CHIP: "Saved in the cloud"
+- retry:
+    maxRetries: 10
+    commands:
+      - runScript:
+          file: ../../scripts/probe-cloud.js
+          env:
+            USER: "e2e00000-0000-0000-0000-000000000017"
+      - assertTrue:
+          condition: ${output.cloudNames === "Edited Soup|Editor Bread|Magenta Pie"}
+          label: "The new title is in the cloud"
+- assertTrue:
+    condition: ${output.cloudRowCount === 3 && output.cloudRecipe["Edited Soup"].id === output.soupId && output.cloudRecipe["Edited Soup"].category === "dinner" && output.cloudRecipe["Edited Soup"].firstIngredient === "Carrots" && output.cloudRecipe["Edited Soup"].ingredientCount === 1}
+    label: "Saved to the same row: meal and ingredient too"
+# The app saves its pending changes a moment after an upload. A save that
+# changed several fields used to leave some pending until a relaunch.
+- retry:
+    maxRetries: 5
+    commands:
+      - runScript: ../../scripts/probe-device-recipes.js
+      - assertTrue:
+          condition: ${output.devicePending === 0}
+          label: "Nothing waits to upload after the edit"
+
+# 2. A new photo
+- runFlow:
+    file: ../../subflows/find-card.yaml
+    env:
+      NAME: "Magenta Pie"
+- tapOn: "Magenta Pie"
+- tapOn: "Edit"
+- runFlow: ../../subflows/pick-photo.yaml
+- tapOn:
+    id: "save-recipe"
+- extendedWaitUntil:
+    visible: "Recipe saved!"
+    timeout: 3000
+- tapOn: "Recipes"
+- runFlow:
+    file: ../../subflows/assert-card-cloud.yaml
+    env:
+      NAME: "Magenta Pie"
+      CHIP: "Saved in the cloud"
+- retry:
+    maxRetries: 10
+    commands:
+      - runScript:
+          file: ../../scripts/probe-cloud.js
+          env:
+            USER: "e2e00000-0000-0000-0000-000000000017"
+      - assertTrue:
+          condition: ${output.cloudRecipe["Magenta Pie"].image !== "e2e00000-0000-0000-0000-000000000017/seed-magenta.jpg" && output.cloudImages === output.cloudRecipe["Magenta Pie"].image}
+          label: "The recipe points to the new photo, the only one in Storage: the old one is deleted"
+- assertTrue:
+    condition: ${output.cloudRecipe["Magenta Pie"].image.indexOf("e2e00000-0000-0000-0000-000000000017/") === 0}
+    label: "The new photo is in the account's folder"
+
+# 3. Deleting
+- runFlow:
+    file: ../../subflows/find-card.yaml
+    env:
+      NAME: "Editor Bread"
+- tapOn: "Editor Bread"
+- tapOn: "Delete"
+- tapOn:
+    text: "Delete"
+    below: "Are you sure\\? This recipe will be deleted permanently."
+- extendedWaitUntil:
+    visible: "Recipe deleted!"
+    timeout: 3000
+- retry:
+    maxRetries: 10
+    commands:
+      - runScript:
+          file: ../../scripts/probe-cloud.js
+          env:
+            USER: "e2e00000-0000-0000-0000-000000000017"
+      - assertTrue:
+          condition: ${output.cloudDeletedNames === "Editor Bread" && output.cloudNames === "Edited Soup|Magenta Pie"}
+          label: "Marked deleted in the cloud"
+- runFlow:
+    file: ../../subflows/find-card.yaml
+    env:
+      NAME: "Magenta Pie"
+- tapOn: "Magenta Pie"
+- tapOn: "Delete"
+- tapOn:
+    text: "Delete"
+    below: "Are you sure\\? This recipe will be deleted permanently."
+- extendedWaitUntil:
+    visible: "Recipe deleted!"
+    timeout: 3000
+- retry:
+    maxRetries: 10
+    commands:
+      - runScript:
+          file: ../../scripts/probe-cloud.js
+          env:
+            USER: "e2e00000-0000-0000-0000-000000000017"
+      - assertTrue:
+          condition: ${output.cloudDeletedNames === "Editor Bread|Magenta Pie" && output.cloudNames === "Edited Soup" && output.cloudImages === ""}
+          label: "Marked deleted in the cloud, its photo deleted from Storage"
+
+# 4. An edit offline
+- runScript:
+    file: ../../scripts/probe-network.js
+    env:
+      STATE: "off"
+- setAirplaneMode: enabled
+- runScript: ../../scripts/probe-online.js
+- assertTrue:
+    condition: ${output.online === false}
+    label: "The device can't reach the internet"
+# Marked once offline, so requests the app made before don't count
+- runScript: ../../scripts/probe-now.js
+- evalScript: ${output.offlineStart = output.since}
+- runFlow:
+    file: ../../subflows/find-card.yaml
+    env:
+      NAME: "Edited Soup"
+- tapOn: "Edited Soup"
+- tapOn: "Edit"
+- runFlow:
+    file: ../../subflows/replace-text.yaml
+    env:
+      ID: "recipe-title"
+      TEXT: "Offline Soup"
+- hideKeyboard
+- tapOn:
+    id: "save-recipe"
+- extendedWaitUntil:
+    visible: "Recipe saved!"
+    timeout: 3000
+- tapOn: "Recipes"
+- runFlow:
+    file: ../../subflows/assert-card-cloud.yaml
+    env:
+      NAME: "Offline Soup"
+      CHIP: "Saved only on this device"
+- runScript:
+    file: ../../scripts/probe-cloud.js
+    env:
+      USER: "e2e00000-0000-0000-0000-000000000017"
+- assertTrue:
+    condition: ${output.cloudNames === "Edited Soup"}
+    label: "Not in the cloud while offline"
+- runScript:
+    file: ../../scripts/probe-cloud-requests.js
+    env:
+      SINCE: ${output.offlineStart}
+      PATHS: "/"
+- assertTrue:
+    condition: ${output.cloudRequests === 0}
+    label: "Nothing reached the cloud while offline"
+- setAirplaneMode: disabled
+- runScript:
+    file: ../../scripts/probe-network.js
+    env:
+      STATE: "on"
+# The sync retries with a growing wait, up to 30 s
+- extendedWaitUntil:
+    visible:
+      id: "recipe-card"
+      containsDescendants:
+        - text: "Offline Soup"
+        - text: "Saved in the cloud"
+    timeout: 60000
+- runScript:
+    file: ../../scripts/probe-cloud.js
+    env:
+      USER: "e2e00000-0000-0000-0000-000000000017"
+- assertTrue:
+    condition: ${output.cloudNames === "Offline Soup" && output.cloudRecipe["Offline Soup"].id === output.soupId}
+    label: "Saved to the cloud once back online"
+- retry:
+    maxRetries: 5
+    commands:
+      - runScript: ../../scripts/probe-device-recipes.js
+      - assertTrue:
+          condition: ${output.devicePending === 0}
+          label: "Nothing waits to upload after the offline edit"
+
+# 5. Deleted recipes stay deleted
+- stopApp
+- launchApp
+- extendedWaitUntil:
+    visible: "Offline Soup"
+    timeout: 20000
+- scrollUntilVisible:
+    element: "That's all for now.*"
+- assertNotVisible: "Editor Bread"
+- assertNotVisible: "Magenta Pie"
+- runScript: ../../scripts/probe-device-recipes.js
+- assertTrue:
+    condition: ${output.deviceRecipeNames === "Offline Soup" && output.devicePending === 0}
+    label: "Only the remaining recipe on the device"
+- runScript:
+    file: ../../scripts/probe-cloud.js
+    env:
+      USER: "e2e00000-0000-0000-0000-000000000017"
+- assertTrue:
+    condition: ${output.cloudNames === "Offline Soup" && output.cloudDeletedNames === "Editor Bread|Magenta Pie" && output.cloudRowCount === 3}
+    label: "The cloud is unchanged by the relaunch"
+
+# 6. Logging out
+# Shown only when nothing was waiting to upload, otherwise the app restarts.
+# Up for 3.5 s, so waited for before anything else.
+- tapOn: "Account"
+- scrollUntilVisible:
+    element: "Delete account"
+- tapOn: "Log out"
+- extendedWaitUntil:
+    visible: "You've logged out!"
+    timeout: 20000
+- assertVisible:
+    id: "account-submit"
+- assertNotVisible: "(?s)Your recipes are saved only on this device.*"

@@ -1,0 +1,357 @@
+# The recipes screen's search and meal filters, on a free account's recipes
+# and its team's.
+#
+# Recipes: its own Morning Pancakes (breakfast), Chicken Wrap (lunch),
+# Chicken Curry (dinner) and Apple Pie (dessert), each with the ingredient
+# "Salt". From its team (seed): Picnic Basket, a lunch tagged "Breakfast" and
+# "Dinner", and Dinner Rolls, a breakfast named after another meal.
+#
+# Checks:
+#   1. Search matches part of the title, in any letter case and ignoring
+#      spaces around it, and only the title (not the ingredients). No match
+#      shows "No recipes match the selected filter". Clearing it shows all.
+#   2. Each meal shows only the recipes saved with that meal: not ones tagged
+#      with it, nor ones with its name in the title. Tapping it again shows
+#      all.
+#   3. A meal and a search together show what matches both
+#
+# A filtered-out card could also be missing only because it's off screen, so
+# before checking what's hidden the list is scrolled to its end ("That's all
+# for now"). Filtered lists are at most 2 cards, one row, all on screen there.
+appId: com.matamim.app.e2e
+name: Free - search and meal filters
+tags:
+  - free
+---
+- launchApp:
+    clearState: true
+- extendedWaitUntil:
+    visible: "Create my first recipe"
+    timeout: 20000
+- runFlow:
+    file: ../../subflows/login.yaml
+    env:
+      EMAIL: "filters@e2e.test"
+      NAME: "Filter Cook"
+- tapOn: "Recipes"
+# The team's recipes load
+- extendedWaitUntil:
+    visible: "Picnic Basket"
+    timeout: 15000
+- assertVisible: "Dinner Rolls"
+- tapOn:
+    id: "tab-create"
+- tapOn: "New recipe"
+- runFlow:
+    file: ../../subflows/create-meal-recipe.yaml
+    env:
+      NAME: "Morning Pancakes"
+      MEAL: "Breakfast"
+- tapOn:
+    id: "tab-create"
+- tapOn: "New recipe"
+- runFlow:
+    file: ../../subflows/create-meal-recipe.yaml
+    env:
+      NAME: "Chicken Wrap"
+      MEAL: "Lunch"
+- tapOn:
+    id: "tab-create"
+- tapOn: "New recipe"
+- runFlow:
+    file: ../../subflows/create-meal-recipe.yaml
+    env:
+      NAME: "Chicken Curry"
+      MEAL: "Dinner"
+- tapOn:
+    id: "tab-create"
+- tapOn: "New recipe"
+- runFlow:
+    file: ../../subflows/create-meal-recipe.yaml
+    env:
+      NAME: "Apple Pie"
+      MEAL: "Dessert"
+- runScript: ../../scripts/probe-device-recipes.js
+- assertTrue:
+    condition: ${output.deviceRecipeNames === "Apple Pie|Chicken Curry|Chicken Wrap|Morning Pancakes" && output.deviceTeamRecipeCount === 2}
+    label: "The 4 recipes are saved, and the team's 2 are on the device"
+
+# All 6 without a filter
+- runFlow:
+    file: ../../subflows/find-card.yaml
+    env:
+      NAME: "Morning Pancakes"
+- runFlow:
+    file: ../../subflows/find-card.yaml
+    env:
+      NAME: "Chicken Wrap"
+- runFlow:
+    file: ../../subflows/find-card.yaml
+    env:
+      NAME: "Chicken Curry"
+- runFlow:
+    file: ../../subflows/find-card.yaml
+    env:
+      NAME: "Apple Pie"
+- runFlow:
+    file: ../../subflows/find-card.yaml
+    env:
+      NAME: "Picnic Basket"
+- runFlow:
+    file: ../../subflows/find-card.yaml
+    env:
+      NAME: "Dinner Rolls"
+
+# 1. Part of the title, another letter case
+- scrollUntilVisible:
+    element:
+      id: "recipe-search"
+    direction: UP
+- tapOn:
+    id: "recipe-search"
+- inputText: "cHiCkEn"
+- hideKeyboard
+- extendedWaitUntil:
+    notVisible: "Morning Pancakes"
+    timeout: 5000
+- scrollUntilVisible:
+    element: "That's all for now.*"
+- assertVisible: "Chicken Wrap"
+- assertVisible: "Chicken Curry"
+- assertNotVisible: "Morning Pancakes"
+- assertNotVisible: "Apple Pie"
+- assertNotVisible: "Picnic Basket"
+- assertNotVisible: "Dinner Rolls"
+
+# 1. Spaces around it are ignored
+- scrollUntilVisible:
+    element:
+      id: "recipe-search"
+    direction: UP
+- runFlow:
+    file: ../../subflows/replace-text.yaml
+    env:
+      ID: "recipe-search"
+      TEXT: "  pie  "
+- hideKeyboard
+- extendedWaitUntil:
+    notVisible: "Chicken Wrap"
+    timeout: 5000
+- scrollUntilVisible:
+    element: "That's all for now.*"
+- assertVisible: "Apple Pie"
+- assertNotVisible: "Chicken Curry"
+- assertNotVisible: "Morning Pancakes"
+- assertNotVisible: "Picnic Basket"
+- assertNotVisible: "Dinner Rolls"
+
+# 1. Only titles are searched: each of its own recipes has Salt, none in
+#    its title
+- scrollUntilVisible:
+    element:
+      id: "recipe-search"
+    direction: UP
+- runFlow:
+    file: ../../subflows/replace-text.yaml
+    env:
+      ID: "recipe-search"
+      TEXT: "salt"
+- hideKeyboard
+- extendedWaitUntil:
+    visible: "No recipes match the selected filter"
+    timeout: 5000
+- assertNotVisible: "Apple Pie"
+- assertNotVisible: "Chicken Wrap"
+- assertNotVisible: "Chicken Curry"
+- assertNotVisible: "Morning Pancakes"
+- assertNotVisible: "Picnic Basket"
+- assertNotVisible: "Dinner Rolls"
+- assertNotVisible: "That's all for now.*"
+
+# 1. Cleared, all 6 again
+- tapOn:
+    id: "recipe-search"
+- runScript: ../../scripts/probe-cursor-end.js
+- eraseText: 20
+- hideKeyboard
+- extendedWaitUntil:
+    visible: "Morning Pancakes"
+    timeout: 5000
+- assertNotVisible: "No recipes match the selected filter"
+- runFlow:
+    file: ../../subflows/find-card.yaml
+    env:
+      NAME: "Chicken Wrap"
+- runFlow:
+    file: ../../subflows/find-card.yaml
+    env:
+      NAME: "Chicken Curry"
+- runFlow:
+    file: ../../subflows/find-card.yaml
+    env:
+      NAME: "Apple Pie"
+- runFlow:
+    file: ../../subflows/find-card.yaml
+    env:
+      NAME: "Picnic Basket"
+- runFlow:
+    file: ../../subflows/find-card.yaml
+    env:
+      NAME: "Dinner Rolls"
+
+# 2. Breakfast: not Picnic Basket, which is tagged Breakfast
+- scrollUntilVisible:
+    element: "Breakfast"
+    direction: UP
+- tapOn: "Breakfast"
+- assertVisible:
+    text: "Breakfast"
+    selected: true
+- extendedWaitUntil:
+    notVisible: "Chicken Wrap"
+    timeout: 5000
+- scrollUntilVisible:
+    element: "That's all for now.*"
+- assertVisible: "Morning Pancakes"
+- assertVisible: "Dinner Rolls"
+- assertNotVisible: "Picnic Basket"
+- assertNotVisible: "Chicken Curry"
+- assertNotVisible: "Apple Pie"
+
+# 2. Tapping it again shows all
+- scrollUntilVisible:
+    element: "Breakfast"
+    direction: UP
+- tapOn: "Breakfast"
+- assertVisible:
+    text: "Breakfast"
+    selected: false
+- runFlow:
+    file: ../../subflows/find-card.yaml
+    env:
+      NAME: "Morning Pancakes"
+- runFlow:
+    file: ../../subflows/find-card.yaml
+    env:
+      NAME: "Chicken Wrap"
+- runFlow:
+    file: ../../subflows/find-card.yaml
+    env:
+      NAME: "Chicken Curry"
+- runFlow:
+    file: ../../subflows/find-card.yaml
+    env:
+      NAME: "Apple Pie"
+- runFlow:
+    file: ../../subflows/find-card.yaml
+    env:
+      NAME: "Picnic Basket"
+- runFlow:
+    file: ../../subflows/find-card.yaml
+    env:
+      NAME: "Dinner Rolls"
+
+# 2. Lunch: Picnic Basket is a lunch
+- scrollUntilVisible:
+    element: "Lunch"
+    direction: UP
+- tapOn: "Lunch"
+- assertVisible:
+    text: "Lunch"
+    selected: true
+- extendedWaitUntil:
+    notVisible: "Morning Pancakes"
+    timeout: 5000
+- scrollUntilVisible:
+    element: "That's all for now.*"
+- assertVisible: "Chicken Wrap"
+- assertVisible: "Picnic Basket"
+- assertNotVisible: "Chicken Curry"
+- assertNotVisible: "Apple Pie"
+- assertNotVisible: "Dinner Rolls"
+
+# 2. Dinner, chosen straight from Lunch: not Picnic Basket (tagged Dinner),
+#    nor Dinner Rolls (Dinner in the title)
+- scrollUntilVisible:
+    element: "Dinner"
+    direction: UP
+- tapOn: "Dinner"
+- assertVisible:
+    text: "Lunch"
+    selected: false
+- assertVisible:
+    text: "Dinner"
+    selected: true
+- extendedWaitUntil:
+    notVisible: "Chicken Wrap"
+    timeout: 5000
+- scrollUntilVisible:
+    element: "That's all for now.*"
+- assertVisible: "Chicken Curry"
+- assertNotVisible: "Picnic Basket"
+- assertNotVisible: "Dinner Rolls"
+- assertNotVisible: "Morning Pancakes"
+- assertNotVisible: "Apple Pie"
+
+# 2. Dessert, the last chip, partly off screen
+- scrollUntilVisible:
+    element: "Dinner"
+    direction: UP
+- swipe:
+    from:
+      text: "Dinner"
+    direction: LEFT
+- tapOn: "Dessert"
+- assertVisible:
+    text: "Dessert"
+    selected: true
+- extendedWaitUntil:
+    notVisible: "Chicken Curry"
+    timeout: 5000
+- scrollUntilVisible:
+    element: "That's all for now.*"
+- assertVisible: "Apple Pie"
+- assertNotVisible: "Morning Pancakes"
+- assertNotVisible: "Chicken Wrap"
+- assertNotVisible: "Picnic Basket"
+- assertNotVisible: "Dinner Rolls"
+
+# 3. A meal and a search: Lunch and "chicken" is only the wrap
+- scrollUntilVisible:
+    element: "Dessert"
+    direction: UP
+- swipe:
+    from:
+      text: "Dessert"
+    direction: RIGHT
+- tapOn: "Lunch"
+- runFlow:
+    file: ../../subflows/replace-text.yaml
+    env:
+      ID: "recipe-search"
+      TEXT: "chicken"
+- hideKeyboard
+- extendedWaitUntil:
+    notVisible: "Picnic Basket"
+    timeout: 5000
+- scrollUntilVisible:
+    element: "That's all for now.*"
+- assertVisible: "Chicken Wrap"
+- assertNotVisible: "Chicken Curry"
+- assertNotVisible: "Morning Pancakes"
+- assertNotVisible: "Apple Pie"
+
+# 3. Breakfast and "chicken" match nothing
+- scrollUntilVisible:
+    element: "Breakfast"
+    direction: UP
+- tapOn: "Breakfast"
+- extendedWaitUntil:
+    visible: "No recipes match the selected filter"
+    timeout: 5000
+- assertNotVisible: "Chicken Wrap"
+- assertNotVisible: "Chicken Curry"
+- assertNotVisible: "Morning Pancakes"
+- assertNotVisible: "Apple Pie"
+- assertNotVisible: "Picnic Basket"
+- assertNotVisible: "Dinner Rolls"

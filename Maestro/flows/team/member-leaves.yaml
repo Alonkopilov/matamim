@@ -1,0 +1,316 @@
+# A member leaves a team, from the teammates' side and from its own. The
+# teammates stop seeing its recipes, it keeps its own, and it can start a team
+# of its own.
+#
+# Seed: leavehost@ (premium) hosts Leave Team with Host Stew. The members, by
+# join date, are leaver@ (premium, cloud sync on, owns Leaver Curry), stayer@
+# (free, no recipes) and quitter@ (premium, cloud sync on, owns Quitter
+# Pasta). stayer@ and leaver@ use the app, quitter@ leaves through the probe.
+#
+# Checks:
+#   1. The stayer sees Members: 4 and the team's three recipes, on screen and
+#      on the device
+#   2. When quitter@ leaves, the stayer's pull to refresh drops Quitter Pasta
+#      from the screen and the device, which had it cached, and the team
+#      screen shows 3 members without Quitter Cook
+#   3. The leaver is asked first (Cancel keeps it a member), then leaves: back
+#      on Account, told so, Shared team off and unlocked, no team on the
+#      server. Its own recipe stays in the cloud and on the device, the team's
+#      recipes are gone from the device
+#   4. Turning Shared team on makes the leaver the Premium head chef of a
+#      new team
+#   5. The stayer logs in again: 2 members, no Leaver Cook, no Leaver Curry
+#      or Quitter Pasta, on screen, on the device and on the server
+appId: com.matamim.app.e2e
+name: Team - members leave
+tags:
+  - team
+---
+- runScript:
+    file: ../../scripts/revenuecat-grant.js
+    env:
+      USER: "e2e00000-0000-0000-0000-000000000033"
+- launchApp:
+    clearState: true
+- extendedWaitUntil:
+    visible: "Create my first recipe"
+    timeout: 20000
+
+# 1. The stayer's team
+- runFlow:
+    file: ../../subflows/login.yaml
+    env:
+      EMAIL: "stayer@e2e.test"
+      NAME: "Stayer Cook"
+- retry:
+    maxRetries: 5
+    commands:
+      - tapOn: "Team"
+      - extendedWaitUntil:
+          visible: "The culinary team"
+          timeout: 4000
+- assertVisible:
+    id: "team-title"
+    text: "Leave Team"
+- assertVisible: "Members: 4"
+- tapOn: "Recipes"
+- extendedWaitUntil:
+    visible: "Host Stew"
+    timeout: 20000
+- runFlow:
+    file: ../../subflows/find-card.yaml
+    env:
+      NAME: "Leaver Curry"
+- runFlow:
+    file: ../../subflows/find-card.yaml
+    env:
+      NAME: "Quitter Pasta"
+- retry:
+    maxRetries: 10
+    commands:
+      - waitForAnimationToEnd:
+          timeout: 1000
+      - runScript: ../../scripts/probe-device-recipes.js
+      - assertTrue:
+          condition: ${output.deviceTeamNames === "Host Stew|Leaver Curry|Quitter Pasta"}
+          label: "The device has the team's three recipes"
+
+# 2. Quitter leaves
+- runScript:
+    file: ../../scripts/as-user.js
+    env:
+      EMAIL: "quitter@e2e.test"
+      FN: "leave-team"
+      BODY: '{"team_id": "e2e7ea00-0000-0000-0000-000000000032"}'
+- assertTrue:
+    condition: ${output.asUserStatus >= 200 && output.asUserStatus < 300 && output.leaveOutcome === "left"}
+    label: "Quitter left the team"
+- scrollUntilVisible:
+    element:
+      id: "recipe-search"
+    direction: UP
+- swipe:
+    start: 50%, 35%
+    end: 50%, 85%
+- retry:
+    maxRetries: 15
+    commands:
+      - waitForAnimationToEnd:
+          timeout: 1000
+      - runScript: ../../scripts/probe-device-recipes.js
+      - assertTrue:
+          condition: ${output.deviceTeamNames === "Host Stew|Leaver Curry"}
+          label: "Quitter Pasta is gone from the device"
+- scrollUntilVisible:
+    element: "That's all for now.*"
+- assertNotVisible: "Quitter Pasta"
+- assertVisible: "Leaver Curry"
+- retry:
+    maxRetries: 5
+    commands:
+      - tapOn: "Team"
+      - extendedWaitUntil:
+          visible: "The culinary team"
+          timeout: 4000
+- assertVisible: "Members: 3"
+- assertNotVisible: ".*Quitter Cook.*"
+- runScript:
+    file: ../../scripts/probe-team.js
+    env:
+      TEAM: "e2e7ea00-0000-0000-0000-000000000032"
+      USER: ""
+- assertTrue:
+    condition: ${output.teamMembers.split('|').length === 2 && output.teamMembers.indexOf("e2e00000-0000-0000-0000-000000000035") === -1}
+    label: "On the server Leave Team has two members, not Quitter"
+
+# 3. The leaver
+- tapOn: "Account"
+- scrollUntilVisible:
+    element: "Delete account"
+- tapOn: "Log out"
+- extendedWaitUntil:
+    visible:
+      id: "account-submit"
+    timeout: 20000
+- runFlow:
+    file: ../../subflows/login.yaml
+    env:
+      EMAIL: "leaver@e2e.test"
+      NAME: "Leaver Cook"
+- retry:
+    maxRetries: 5
+    commands:
+      - tapOn: "Team"
+      - extendedWaitUntil:
+          visible: "The culinary team"
+          timeout: 4000
+- assertVisible:
+    id: "team-title"
+    text: "Leave Team"
+- assertVisible:
+    id: "team-leave"
+# The team's recipe is on the device before leaving, so it's removed later
+- retry:
+    maxRetries: 15
+    commands:
+      - waitForAnimationToEnd:
+          timeout: 1000
+      - runScript: ../../scripts/probe-device-recipes.js
+      - assertTrue:
+          condition: ${output.deviceTeamNames === "Host Stew" && output.deviceRecipeNames === "Leaver Curry"}
+          label: "The leaver's device has Host Stew from the team and its own Leaver Curry"
+# The dialog is found by its message, its title is also the team's name
+- tapOn:
+    id: "team-leave"
+- extendedWaitUntil:
+    visible: "Are you sure you want to leave the team\\? You won't see your teammates' recipes anymore, but your own recipes will stay safe\\."
+    timeout: 5000
+- tapOn:
+    id: "alert-cancel"
+- extendedWaitUntil:
+    notVisible: "Are you sure you want to leave the team\\?.*"
+    timeout: 5000
+- assertVisible: "The culinary team"
+- runScript:
+    file: ../../scripts/probe-team.js
+    env:
+      TEAM: ""
+      USER: "e2e00000-0000-0000-0000-000000000033"
+- assertTrue:
+    condition: ${output.teamExists && output.teamId === "e2e7ea00-0000-0000-0000-000000000032" && output.teamMembers.indexOf("e2e00000-0000-0000-0000-000000000033") !== -1}
+    label: "Cancel kept the leaver in the team"
+- tapOn:
+    id: "team-leave"
+- extendedWaitUntil:
+    visible: "Are you sure you want to leave the team\\?.*"
+    timeout: 5000
+- tapOn:
+    id: "alert-destructive"
+- extendedWaitUntil:
+    visible: "You left the team\\."
+    timeout: 15000
+- assertNotVisible: "The culinary team"
+- assertVisible:
+    text: "Account"
+    selected: true
+- scrollUntilVisible:
+    element:
+      id: "setting-collaborativeTeam"
+- assertVisible:
+    id: "setting-collaborativeTeam"
+    checked: false
+    enabled: true
+- runScript:
+    file: ../../scripts/probe-team.js
+    env:
+      TEAM: ""
+      USER: "e2e00000-0000-0000-0000-000000000033"
+- assertTrue:
+    condition: ${!output.teamExists}
+    label: "The leaver is in no team on the server"
+- runScript:
+    file: ../../scripts/probe-team.js
+    env:
+      TEAM: "e2e7ea00-0000-0000-0000-000000000032"
+      USER: ""
+- assertTrue:
+    condition: ${output.teamExists && output.teamMembers.indexOf("e2e00000-0000-0000-0000-000000000033") === -1}
+    label: "Leave Team is still there without the leaver"
+- runScript:
+    file: ../../scripts/probe-cloud.js
+    env:
+      USER: "e2e00000-0000-0000-0000-000000000033"
+- assertTrue:
+    condition: ${output.cloudNames === "Leaver Curry"}
+    label: "Leaver Curry is still in the cloud"
+- retry:
+    maxRetries: 10
+    commands:
+      - waitForAnimationToEnd:
+          timeout: 1000
+      - runScript: ../../scripts/probe-device-recipes.js
+      - assertTrue:
+          condition: ${output.deviceRecipeNames === "Leaver Curry" && output.deviceTeamRecipeCount === 0}
+          label: "On the device Leaver Curry stays and the team's recipes are gone"
+
+# 4. A team of its own
+- tapOn:
+    id: "setting-collaborativeTeam"
+- extendedWaitUntil:
+    visible: "The culinary team"
+    timeout: 15000
+- assertVisible:
+    id: "team-title"
+    text: "New team"
+- assertVisible: "Members: 1"
+- assertVisible:
+    id: "team-member"
+    text: "Leaver Cook, leaver@e2e.test, Premium, Head chef"
+- retry:
+    maxRetries: 5
+    commands:
+      - runScript:
+          file: ../../scripts/probe-team.js
+          env:
+            TEAM: ""
+            USER: "e2e00000-0000-0000-0000-000000000033"
+      - assertTrue:
+          condition: ${output.teamExists && output.teamTitle === "New team" && output.teamHost === "e2e00000-0000-0000-0000-000000000033" && output.teamId !== "e2e7ea00-0000-0000-0000-000000000032" && output.teamMembers === ""}
+          label: "A new team hosted by the leaver"
+
+# 5. The stayer again
+- tapOn: "Account"
+- scrollUntilVisible:
+    element: "Delete account"
+- tapOn: "Log out"
+- extendedWaitUntil:
+    visible:
+      id: "account-submit"
+    timeout: 20000
+- runFlow:
+    file: ../../subflows/login.yaml
+    env:
+      EMAIL: "stayer@e2e.test"
+      NAME: "Stayer Cook"
+- retry:
+    maxRetries: 5
+    commands:
+      - tapOn: "Team"
+      - extendedWaitUntil:
+          visible: "The culinary team"
+          timeout: 4000
+- assertVisible:
+    id: "team-title"
+    text: "Leave Team"
+- assertVisible: "Members: 2"
+- assertVisible:
+    id: "team-member"
+    text: "Leave Host, Premium, Head chef"
+- assertVisible:
+    id: "team-member"
+    text: "Stayer Cook, stayer@e2e.test"
+- assertNotVisible: ".*Leaver Cook.*"
+- tapOn: "Recipes"
+- extendedWaitUntil:
+    visible: "Host Stew"
+    timeout: 20000
+- scrollUntilVisible:
+    element: "That's all for now.*"
+- assertNotVisible: "Leaver Curry"
+- assertNotVisible: "Quitter Pasta"
+- runScript:
+    file: ../../scripts/probe-visible-recipes.js
+    env:
+      EMAIL: "stayer@e2e.test"
+- assertTrue:
+    condition: ${output.visibleNames === "Host Stew"}
+    label: "On the server the stayer can see only Host Stew"
+- retry:
+    maxRetries: 10
+    commands:
+      - waitForAnimationToEnd:
+          timeout: 1000
+      - runScript: ../../scripts/probe-device-recipes.js
+      - assertTrue:
+          condition: ${output.deviceTeamNames === "Host Stew"}
+          label: "The stayer's device has only Host Stew"

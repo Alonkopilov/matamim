@@ -1,0 +1,17 @@
+appId: com.matamim.app
+---
+- launchApp:
+    clearState: true
+- tapOn:
+    text: "Matamim"
+    index: 1
+- tapOn: "Close"
+- tapOn: "󰭕, Account"
+- tapOn: "Email"
+- inputText: "value"
+- tapOn: "Password"
+- inputText: "value"
+- hideKeyboard
+- tapOn: "Log in"
+
+

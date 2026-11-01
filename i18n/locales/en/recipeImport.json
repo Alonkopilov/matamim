@@ -1,0 +1,46 @@
+{
+  "title": "Import a recipe",
+  "description": "Don't want to type in a recipe from the web by hand? Paste a link to the recipe page and we'll turn it into a new recipe in the app",
+  "urlPlaceholder": "Paste a link here",
+  "loading": "Loading the recipe, this may take a few seconds...",
+  "start": "Start",
+  "mode": {
+    "link": "From a link",
+    "photo": "From a photo"
+  },
+  "photo": {
+    "description": "Have a recipe on a card, in a notebook or in a screenshot? Photograph it and we'll fill in a new recipe for you to check",
+    "takePhoto": "Take a photo",
+    "chooseFromGallery": "From gallery",
+    "tip": "Photograph the whole recipe, straight and in good light. Up to {{count}} photos, like both sides of a card.",
+    "loading": "Reading the recipe, this may take a few seconds...",
+    "remove": "Remove photo",
+    "cameraPermission": {
+      "title": "Permission needed",
+      "message": "To photograph a recipe, allow the app to use the camera."
+    },
+    "galleryPermission": {
+      "title": "Permission needed",
+      "message": "To import a recipe from a photo, allow the app to access your photos."
+    }
+  },
+  "freeImportsLeft": "Free imports left: {{count}}",
+  "loginRequired": {
+    "title": "Log in to try importing",
+    "message": "Create a free account and import your first 3 recipes from the web or a photo for free."
+  },
+  "usedUp": {
+    "title": "You've used your free imports",
+    "message": "Upgrade to Premium to keep importing recipes, and share your recipe book with the whole family.",
+    "upgrade": "To Premium"
+  },
+  "text": {
+    "description": "We'll turn the text you shared into a new recipe for you to check",
+    "loading": "Reading the recipe, this may take a few seconds..."
+  },
+  "share": {
+    "unsupportedTitle": "Can't import this",
+    "photosSkipped": "Only the first {{count}} photos are imported.",
+    "usePhotos": "Import from screenshots"
+  }
+}

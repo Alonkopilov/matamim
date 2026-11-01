@@ -1,0 +1,15 @@
+{{ if eq .Data.language "en" }}
+<div dir="ltr" style="font-family: Arial, sans-serif; font-size: 16px; color: #141517;">
+  <h2>Welcome to Matamim</h2>
+  <p>Enter this code in the app to confirm your email and finish signing up:</p>
+  <p style="font-size: 32px; font-weight: bold; letter-spacing: 6px;">{{ .Token }}</p>
+  <p>The code is valid for one hour. If you didn't sign up, you can ignore this email.</p>
+</div>
+{{ else }}
+<div dir="rtl" style="font-family: Arial, sans-serif; font-size: 16px; color: #141517; text-align: right;">
+  <h2>ברוכים הבאים למטעמים</h2>
+  <p>הזינו את הקוד הזה באפליקציה כדי לאשר את המייל ולסיים את ההרשמה:</p>
+  <p dir="ltr" style="font-size: 32px; font-weight: bold; letter-spacing: 6px; text-align: right;">{{ .Token }}</p>
+  <p>הקוד בתוקף לשעה. אם לא נרשמתם, אפשר להתעלם מהמייל הזה.</p>
+</div>
+{{ end }}

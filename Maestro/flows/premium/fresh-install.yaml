@@ -1,0 +1,180 @@
+# A premium account with recipes in the cloud logs in on a fresh install, and
+# then logs out.
+#
+# Seed: cloud@ has cloud sync on, and in the cloud Magenta Soup (with an
+# all-magenta photo and the ingredient "Beets"), Cloud Bread, and Removed
+# Stew, deleted.
+#
+# Checks:
+#   1. A fresh install has nothing on the device
+#   2. After logging in, Magenta Soup and Cloud Bread are downloaded and shown
+#      with the orange chip, the photo shown and the recipe as saved. Removed
+#      Stew isn't. Cloud sync shows on.
+#   3. Logging out doesn't ask (everything is in the cloud), says so, and
+#      deletes the recipes and the photo's file from the device, not from the
+#      cloud. Still so after a relaunch.
+#   4. Logging in again brings them back
+appId: com.matamim.app.e2e
+name: Premium - recipes from the cloud on a fresh install, logout
+tags:
+  - premium
+---
+- runScript:
+    file: ../../scripts/revenuecat-grant.js
+    env:
+      USER: "e2e00000-0000-0000-0000-000000000014"
+- launchApp:
+    clearState: true
+- extendedWaitUntil:
+    visible: "Create my first recipe"
+    timeout: 20000
+
+# 1. Nothing on the device
+- runScript: ../../scripts/probe-device-recipes.js
+- assertTrue:
+    condition: ${output.deviceRecipeCount === 0 && output.deviceTeamRecipeCount === 0}
+    label: "A fresh install has no recipes"
+
+# 2. Logged in, the cloud's recipes come down
+- runFlow:
+    file: ../../subflows/login.yaml
+    env:
+      EMAIL: "cloud@e2e.test"
+      NAME: "Cloud Cook"
+- assertVisible:
+    id: "setting-cloudSync"
+    checked: true
+- tapOn: "Recipes"
+- extendedWaitUntil:
+    visible: "Magenta Soup"
+    timeout: 20000
+- runFlow:
+    file: ../../subflows/assert-card-cloud.yaml
+    env:
+      NAME: "Magenta Soup"
+      CHIP: "Saved in the cloud"
+- retry:
+    maxRetries: 10
+    commands:
+      - runScript:
+          file: ../../scripts/probe-screen-color.js
+          env:
+            RGB: "ff00ff"
+      - assertTrue:
+          condition: ${output.screenColorShare > 0.02}
+          label: "The photo is shown"
+# expo-image writes the downloaded photo to its disk cache after showing it.
+# Checked here so step 3's empty cache means deleted, not never written.
+- retry:
+    maxRetries: 5
+    commands:
+      - runScript: ../../scripts/probe-device-images.js
+      - assertTrue:
+          condition: ${output.cachedImageCount >= 1}
+          label: "The photo's file is on the device"
+- runFlow:
+    file: ../../subflows/assert-card-cloud.yaml
+    env:
+      NAME: "Cloud Bread"
+      CHIP: "Saved in the cloud"
+- scrollUntilVisible:
+    element: "That's all for now.*"
+- assertNotVisible: "Removed Stew"
+- runScript: ../../scripts/probe-device-recipes.js
+- assertTrue:
+    condition: ${output.deviceRecipeNames === "Cloud Bread|Magenta Soup" && output.devicePending === 0}
+    label: "Both recipes, and only them, are on the device"
+- runFlow:
+    file: ../../subflows/find-card.yaml
+    env:
+      NAME: "Magenta Soup"
+- tapOn: "Magenta Soup"
+- extendedWaitUntil:
+    visible: "1 +Beets"
+    timeout: 5000
+- assertVisible:
+    id: "property-meal-value"
+    text: "Dinner"
+- tapOn: "Recipes"
+
+# 3. Logging out
+- tapOn: "Account"
+- scrollUntilVisible:
+    element: "Delete account"
+- tapOn: "Log out"
+# Shown only when nothing was waiting to upload, otherwise the app restarts.
+# Up for 3.5 s, so waited for before anything else.
+- extendedWaitUntil:
+    visible: "You've logged out!"
+    timeout: 20000
+- assertVisible:
+    id: "account-submit"
+- assertNotVisible: "(?s)Your recipes are saved only on this device.*"
+- assertNotVisible: "Cloud Cook"
+- runScript: ../../scripts/probe-device-recipes.js
+- assertTrue:
+    condition: ${output.deviceRecipeCount === 0 && output.deviceTeamRecipeCount === 0}
+    label: "No recipes left on the device"
+- runScript: ../../scripts/probe-device-images.js
+- assertTrue:
+    condition: ${output.cachedImageCount === 0 && output.localImageCount === 0 && output.keptImageCount === 0}
+    label: "No photo files left on the device"
+- tapOn: "Recipes"
+- extendedWaitUntil:
+    visible: "Create my first recipe"
+    timeout: 10000
+- assertNotVisible: "Magenta Soup"
+- assertNotVisible: "Cloud Bread"
+- runScript:
+    file: ../../scripts/probe-cloud.js
+    env:
+      USER: "e2e00000-0000-0000-0000-000000000014"
+- assertTrue:
+    condition: ${output.cloudNames === "Cloud Bread|Magenta Soup" && output.cloudDeletedNames === "Removed Stew" && output.cloudImages === "e2e00000-0000-0000-0000-000000000014/seed-magenta.jpg" && output.cloudSetting === "true"}
+    label: "The cloud still has the recipes, the photo, and cloud sync on"
+- runScript:
+    file: ../../scripts/probe-user-rows.js
+    env:
+      USER: "e2e00000-0000-0000-0000-000000000014"
+- assertTrue:
+    condition: ${output.rows_auth_sessions === 0}
+    label: "The session is revoked on the server"
+- stopApp
+- launchApp
+- extendedWaitUntil:
+    visible: "Create my first recipe"
+    timeout: 20000
+- assertVisible: "Hello, Anonymous Chef!"
+- runScript: ../../scripts/probe-device-recipes.js
+- assertTrue:
+    condition: ${output.deviceRecipeCount === 0}
+    label: "Still no recipes after a relaunch"
+- runScript:
+    file: ../../scripts/probe-screen-color.js
+    env:
+      RGB: "ff00ff"
+- assertTrue:
+    condition: ${output.screenColorShare === 0}
+    label: "No photo shown"
+
+# 4. Logging in again brings them back
+- runFlow:
+    file: ../../subflows/login.yaml
+    env:
+      EMAIL: "cloud@e2e.test"
+      NAME: "Cloud Cook"
+- tapOn: "Recipes"
+- runFlow:
+    file: ../../subflows/assert-card-cloud.yaml
+    env:
+      NAME: "Magenta Soup"
+      CHIP: "Saved in the cloud"
+- runFlow:
+    file: ../../subflows/assert-card-cloud.yaml
+    env:
+      NAME: "Cloud Bread"
+      CHIP: "Saved in the cloud"
+- runScript: ../../scripts/probe-device-recipes.js
+- assertTrue:
+    condition: ${output.deviceRecipeNames === "Cloud Bread|Magenta Soup"}
+    label: "Both recipes are back on the device"

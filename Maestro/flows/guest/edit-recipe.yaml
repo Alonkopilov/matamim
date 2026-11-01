@@ -1,0 +1,310 @@
+# A guest edits a saved recipe. Edits are kept only by saving, saving checks
+# the recipe like creating does, and it all stays on the device.
+#
+# Starts from a recipe made by subflows/create-recipe.yaml: 40 min, 6
+# servings, Dinner, Medium, no description, ingredient "4 pcs Eggs", step
+# "Cook".
+#
+# Checks:
+#   1. Saving an edit is refused without a title, like creating
+#   2. Every field except the photo is edited and saved: edit mode closes,
+#      the recipes screen shows the new values, and reopening the recipe,
+#      also after a relaunch, shows only the new values
+#   3. Leaving edit mode with unsaved changes asks first, and discarding
+#      keeps the saved recipe as it was, also after a relaunch
+#   4. Nothing reached the cloud (no requests to Supabase, no rows added)
+appId: com.matamim.app.e2e
+name: Guest - edit a recipe
+tags:
+  - guest
+---
+# Starts the network window before launch, so startup requests count too
+- runScript: ../../scripts/probe-now.js
+- evalScript: ${output.flowStart = output.since}
+# Other flows in a suite run leave recipe rows, so count what this flow adds
+- runScript:
+    file: ../../scripts/probe-count.js
+    env:
+      TABLE: "recipes"
+- evalScript: ${output.rowsAtStart = output.rowCount}
+- launchApp:
+    clearState: true
+- extendedWaitUntil:
+    visible: "Create my first recipe"
+    timeout: 20000
+- tapOn: "Create my first recipe"
+- runFlow:
+    file: ../../subflows/create-recipe.yaml
+    env:
+      NAME: "E2E Shakshuka"
+- tapOn: "E2E Shakshuka"
+
+# 1. Saving without a title is refused, with only that problem listed
+- tapOn: "Edit"
+- assertVisible:
+    id: "recipe-title"
+    text: "E2E Shakshuka"
+- assertNotVisible:
+    id: "create-recipe"
+- tapOn:
+    id: "recipe-title"
+- runScript: ../../scripts/probe-cursor-end.js
+- eraseText: 100
+- hideKeyboard
+- assertVisible:
+    id: "recipe-title"
+    text: ""
+- tapOn:
+    id: "save-recipe"
+- assertVisible: "Some recipe details are missing"
+- assertVisible: "(?s).*Missing a title.*"
+- assertNotVisible: "(?s).*Missing prep time.*"
+- assertNotVisible: "(?s).*Missing number of servings.*"
+- assertNotVisible: "(?s).*Missing meal type.*"
+- assertNotVisible: "(?s).*Missing difficulty level.*"
+- assertNotVisible: "(?s).*Missing ingredients.*"
+- assertNotVisible: "(?s).*Missing steps.*"
+- tapOn: "Got it"
+- assertNotVisible: "Some recipe details are missing"
+# Still editing, nothing saved
+- assertNotVisible: "Recipe saved!"
+- assertVisible:
+    id: "save-recipe"
+
+# 2. Edit every field, except the photo. Each new value differs from the old
+#    one in every part, so a field left unsaved shows.
+- runFlow:
+    file: ../../subflows/replace-text.yaml
+    env:
+      ID: "recipe-title"
+      TEXT: "E2E Green Shakshuka"
+- runFlow:
+    file: ../../subflows/replace-text.yaml
+    env:
+      ID: "recipe-description"
+      TEXT: "Duck eggs baked with spinach and feta"
+- hideKeyboard
+- assertVisible:
+    id: "recipe-title"
+    text: "E2E Green Shakshuka"
+- assertVisible:
+    id: "recipe-description"
+    text: "Duck eggs baked with spinach and feta"
+
+- tapOn:
+    id: "property-prepTime"
+# The wheel opens on 40, 50 is two rows down
+- tapOn: "50"
+- waitForAnimationToEnd
+- tapOn: "OK"
+- assertVisible:
+    id: "property-prepTime"
+    text: "50"
+- tapOn:
+    id: "property-servings"
+# The wheel opens on 6
+- tapOn: "8"
+- waitForAnimationToEnd
+- tapOn: "OK"
+- assertVisible:
+    id: "property-servings"
+    text: "8"
+- tapOn:
+    id: "property-meal"
+- tapOn: "Breakfast"
+- assertVisible:
+    id: "property-meal"
+    text: "Breakfast"
+- tapOn:
+    id: "property-difficulty"
+- tapOn: "Hard"
+- assertVisible:
+    id: "property-difficulty"
+    text: "Hard"
+
+- scrollUntilVisible:
+    element:
+      id: "ingredient-0-amount"
+    centerElement: true
+- runFlow:
+    file: ../../subflows/replace-text.yaml
+    env:
+      ID: "ingredient-0-amount"
+      TEXT: "5"
+- runFlow:
+    file: ../../subflows/replace-text.yaml
+    env:
+      ID: "ingredient-0-unit"
+      TEXT: "whole"
+- runFlow:
+    file: ../../subflows/replace-text.yaml
+    env:
+      ID: "ingredient-0-item"
+      TEXT: "Duck eggs"
+- hideKeyboard
+- assertVisible:
+    id: "ingredient-0-amount"
+    text: "5"
+- assertVisible:
+    id: "ingredient-0-unit"
+    text: "whole"
+- assertVisible:
+    id: "ingredient-0-item"
+    text: "Duck eggs"
+
+- scrollUntilVisible:
+    element:
+      id: "step-0"
+    centerElement: true
+- runFlow:
+    file: ../../subflows/replace-text.yaml
+    env:
+      ID: "step-0"
+      TEXT: "Wilt the spinach"
+- hideKeyboard
+- assertVisible:
+    id: "step-0"
+    text: "Wilt the spinach"
+
+# 2. Saved: edit mode closes on the saved values
+- tapOn:
+    id: "save-recipe"
+- extendedWaitUntil:
+    visible: "Recipe saved!"
+    timeout: 3000
+- assertNotVisible: "Some recipe details are missing"
+- assertNotVisible:
+    id: "save-recipe"
+- assertNotVisible:
+    id: "recipe-title"
+- assertVisible:
+    id: "property-prepTime-value"
+    text: "50"
+
+# 2. Back to the recipes screen. The card is read from the saved recipes, so
+#    it shows the edit was saved. Nothing was left to save, so no prompt.
+- tapOn: "Back"
+- assertNotVisible: "Discard changes\\?"
+- assertVisible:
+    text: "Recipes"
+    selected: true
+- assertVisible: "E2E Green Shakshuka"
+- assertNotVisible: "E2E Shakshuka"
+- assertVisible: "50 min"
+- assertNotVisible: "40 min"
+- assertVisible: "Hard"
+- assertNotVisible: "Medium"
+
+# 2. Reopened, only the new values. The recipes tab isn't in the tree now,
+#    so the titles here are the recipe screen's
+- tapOn: "E2E Green Shakshuka"
+- assertNotVisible:
+    id: "recipe-title"
+- assertVisible: "E2E Green Shakshuka"
+- assertNotVisible: "E2E Shakshuka"
+- assertVisible: "Duck eggs baked with spinach and feta"
+- assertVisible:
+    id: "property-prepTime-value"
+    text: "50"
+- assertVisible:
+    id: "property-servings-value"
+    text: "8"
+- assertVisible:
+    id: "property-meal-value"
+    text: "Breakfast"
+- assertVisible:
+    id: "property-difficulty-value"
+    text: "Hard"
+- assertVisible: "5 whole Duck eggs"
+- assertNotVisible: "4 pcs Eggs"
+- tapOn: "Steps"
+- assertVisible: "Wilt the spinach"
+- assertNotVisible: "Cook"
+
+# 2. After a relaunch the recipe is read from storage, not from the open
+#    screen, so this shows the edit was saved on the device
+- stopApp
+- launchApp
+- extendedWaitUntil:
+    visible: "E2E Green Shakshuka"
+    timeout: 20000
+- assertNotVisible: "E2E Shakshuka"
+- tapOn: "E2E Green Shakshuka"
+- assertVisible: "E2E Green Shakshuka"
+- assertNotVisible: "E2E Shakshuka"
+- assertVisible: "Duck eggs baked with spinach and feta"
+- assertVisible:
+    id: "property-prepTime-value"
+    text: "50"
+- assertVisible:
+    id: "property-servings-value"
+    text: "8"
+- assertVisible:
+    id: "property-meal-value"
+    text: "Breakfast"
+- assertVisible:
+    id: "property-difficulty-value"
+    text: "Hard"
+- assertVisible: "5 whole Duck eggs"
+- assertNotVisible: "4 pcs Eggs"
+- tapOn: "Steps"
+- assertVisible: "Wilt the spinach"
+- assertNotVisible: "Cook"
+
+# 3. Changes left unsaved: Back asks, and "Keep editing" stays in edit mode
+#    with the changes
+- tapOn: "Edit"
+- runFlow:
+    file: ../../subflows/replace-text.yaml
+    env:
+      ID: "recipe-title"
+      TEXT: "E2E Discarded"
+- hideKeyboard
+- tapOn: "Back"
+- assertVisible: "Discard changes\\?"
+- tapOn: "Keep editing"
+- assertNotVisible: "Discard changes\\?"
+- assertVisible:
+    id: "recipe-title"
+    text: "E2E Discarded"
+
+# 3. Discarding goes back to the recipes screen with the saved recipe
+- tapOn: "Back"
+- assertVisible: "Discard changes\\?"
+- tapOn: "Discard"
+- assertVisible:
+    text: "Recipes"
+    selected: true
+- assertVisible: "E2E Green Shakshuka"
+- assertNotVisible: "E2E Discarded"
+# The screen stays mounted, so reopening shows what Discard left on it: the
+# saved title, not the discarded one
+- tapOn: "E2E Green Shakshuka"
+- assertNotVisible:
+    id: "recipe-title"
+- assertVisible: "E2E Green Shakshuka"
+- assertNotVisible: "E2E Discarded"
+- assertVisible: "Duck eggs baked with spinach and feta"
+# And the discarded title never reached the device's storage
+- stopApp
+- launchApp
+- extendedWaitUntil:
+    visible: "E2E Green Shakshuka"
+    timeout: 20000
+- assertNotVisible: "E2E Discarded"
+
+# 4. Nothing reached the cloud, from before launch to the end
+- runScript:
+    file: ../../scripts/probe-cloud-requests.js
+    env:
+      SINCE: ${output.flowStart}
+- assertTrue:
+    condition: ${output.cloudRequests === 0}
+    label: "No requests at all reached local Supabase"
+- runScript:
+    file: ../../scripts/probe-count.js
+    env:
+      TABLE: "recipes"
+- assertTrue:
+    condition: ${output.rowCount === output.rowsAtStart}
+    label: "No recipe rows added to the database"

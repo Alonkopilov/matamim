@@ -1,0 +1,476 @@
+# A guest signs up with an email code, and the app is set up for the new
+# account.
+#
+# Checks:
+#   1. "Log in here" and "Sign up here" switch between the two forms
+#   2. The sign up form refuses empty and invalid values, one field at a
+#      time: full name (symbols, too short, too long), email, short
+#      password, passwords that don't match
+#   3. An email that already has an account is refused, and no code is sent
+#   4. Sign up shows the code screen and emails a code, also when the email
+#      has spaces around it
+#   5. The code screen refuses an empty code, a code that isn't 6 digits,
+#      and a wrong code
+#   6. "Back to sign up" returns to the sign up form with only the email
+#      kept, and it can send a code again
+#   7. "Send a new code" emails another code that replaces the previous one
+#      (now refused), and the newest one confirms the account: the Account tab shows the new account with "You're
+#      signed up!"
+#   8. Signed in: the recipes screen says "Hello, Noa Levi!", purchase,
+#      restore and AI imports don't ask to log in, and the Account tab shows
+#      the account
+#   9. The session survives a relaunch, and the server still accepts it
+#   Throughout: the account's profile only exists once the code is confirmed
+appId: com.matamim.app.e2e
+name: Account - sign up
+tags:
+  - account
+---
+# Codes from an earlier run would be read as this run's
+- runScript:
+    file: ../../scripts/mailpit-clear.js
+    env:
+      EMAIL: "noa.levi@e2e.test"
+- runScript:
+    file: ../../scripts/mailpit-clear.js
+    env:
+      EMAIL: "owner@e2e.test"
+# The count leaves the seed's accounts out. Other flows in a suite run may have
+# added profiles, so this flow counts the ones it adds
+- runScript:
+    file: ../../scripts/probe-count.js
+    env:
+      TABLE: "profiles"
+- evalScript: ${output.profilesAtStart = output.rowCount}
+
+- launchApp:
+    clearState: true
+- extendedWaitUntil:
+    visible: "Create my first recipe"
+    timeout: 20000
+- tapOn: "Account"
+
+# 1. The log in form, then sign up, then back to log in
+- assertVisible: "Log in"
+- assertVisible: "Forgot your password\\?"
+- assertNotVisible:
+    id: "account-fullName"
+- assertNotVisible:
+    id: "account-confirmPassword"
+- tapOn: "Sign up here"
+- assertVisible:
+    id: "account-fullName"
+- assertVisible:
+    id: "account-email"
+- assertVisible:
+    id: "account-password"
+- assertVisible:
+    id: "account-confirmPassword"
+- assertVisible: "Sign up"
+- assertVisible: "Already have an account\\?"
+- assertNotVisible: "Forgot your password\\?"
+- tapOn: "Log in here"
+- assertVisible: "Log in"
+- assertVisible: "Forgot your password\\?"
+- assertNotVisible:
+    id: "account-fullName"
+- assertNotVisible:
+    id: "account-confirmPassword"
+- tapOn: "Sign up here"
+- assertVisible:
+    id: "account-fullName"
+
+# 2. Everything empty: each field says it's required
+- tapOn:
+    id: "account-submit"
+- assertVisible: "(?s).*Full name is required\\..*"
+- assertVisible: "(?s).*Email is required\\..*"
+- assertVisible: "(?s).*Password is required\\..*"
+- assertVisible: "(?s).*Please confirm your password\\..*"
+- assertNotVisible: "Confirm your email"
+
+# 2. One bad field at a time, the rest valid. Only that field's problem is
+#    listed, and the form stays (a valid form would send a code).
+- runFlow:
+    file: ../../subflows/fill-signup.yaml
+    env:
+      NAME: "Noa Levi!1"
+      EMAIL: "noa.levi@e2e.test"
+      PASSWORD: "${E2E_PASSWORD}"
+      CONFIRM: "${E2E_PASSWORD}"
+- tapOn:
+    id: "account-submit"
+- assertVisible: "Name can only contain letters and spaces \\(no numbers or symbols\\)\\."
+- assertVisible:
+    id: "account-fullName"
+
+- runFlow:
+    file: ../../subflows/replace-text.yaml
+    env:
+      ID: "account-fullName"
+      TEXT: "N"
+- hideKeyboard
+- tapOn:
+    id: "account-submit"
+- assertVisible: "Name must be at least 2 characters\\."
+
+- runFlow:
+    file: ../../subflows/replace-text.yaml
+    env:
+      ID: "account-fullName"
+      # 31 letters and spaces
+      TEXT: "Noa Levi Noa Levi Noa Levi Noaa"
+- hideKeyboard
+- tapOn:
+    id: "account-submit"
+- assertVisible: "Name can be at most 30 characters\\."
+
+- runFlow:
+    file: ../../subflows/fill-signup.yaml
+    env:
+      NAME: "Noa Levi"
+      EMAIL: "noa.levi@e2e"
+      PASSWORD: "${E2E_PASSWORD}"
+      CONFIRM: "${E2E_PASSWORD}"
+- tapOn:
+    id: "account-submit"
+- assertVisible: "That email address isn't valid \\(e\\.g\\. example@email\\.com\\)\\."
+
+- runFlow:
+    file: ../../subflows/fill-signup.yaml
+    env:
+      NAME: "Noa Levi"
+      EMAIL: "noa.levi@e2e.test"
+      PASSWORD: "short12"
+      CONFIRM: "short12"
+- tapOn:
+    id: "account-submit"
+- assertVisible: "Password must be at least 8 characters\\."
+
+- runFlow:
+    file: ../../subflows/fill-signup.yaml
+    env:
+      NAME: "Noa Levi"
+      EMAIL: "noa.levi@e2e.test"
+      PASSWORD: "${E2E_PASSWORD}"
+      CONFIRM: "${E2E_PASSWORD}x"
+- tapOn:
+    id: "account-submit"
+- assertVisible: "Passwords don't match\\."
+- assertVisible:
+    id: "account-fullName"
+
+# 2. Nothing was sent for any of them
+- runScript:
+    file: ../../scripts/mailpit-code.js
+    env:
+      EMAIL: "noa.levi@e2e.test"
+- assertTrue:
+    condition: ${output.emailCount === 0}
+    label: "No code emailed while the form was refused"
+
+# 3. An email that already has an account
+- runFlow:
+    file: ../../subflows/fill-signup.yaml
+    env:
+      NAME: "Noa Levi"
+      EMAIL: "owner@e2e.test"
+      PASSWORD: "${E2E_PASSWORD}"
+      CONFIRM: "${E2E_PASSWORD}"
+- tapOn:
+    id: "account-submit"
+- extendedWaitUntil:
+    visible: "This email address is already registered"
+    timeout: 10000
+- assertNotVisible: "Confirm your email"
+- assertVisible:
+    id: "account-fullName"
+- runScript:
+    file: ../../scripts/mailpit-code.js
+    env:
+      EMAIL: "owner@e2e.test"
+- assertTrue:
+    condition: ${output.emailCount === 0}
+    label: "No code emailed to the existing account"
+
+# 4. A new email, with the spaces a keyboard adds around a suggested email:
+#    the code screen, and a code in the inbox of the address without them
+- runFlow:
+    file: ../../subflows/replace-text.yaml
+    env:
+      ID: "account-email"
+      TEXT: " noa.levi@e2e.test "
+- hideKeyboard
+- assertVisible:
+    id: "account-email"
+    text: " noa\\.levi@e2e\\.test "
+- tapOn:
+    id: "account-submit"
+- extendedWaitUntil:
+    visible: "Confirm your email"
+    timeout: 10000
+- assertVisible: "We sent a code to noa\\.levi@e2e\\.test, enter it below to finish signing up\\."
+- assertVisible:
+    id: "account-code"
+- assertNotVisible:
+    id: "account-fullName"
+- assertNotVisible:
+    id: "account-password"
+- runScript:
+    file: ../../scripts/mailpit-code.js
+    env:
+      EMAIL: "noa.levi@e2e.test"
+- assertTrue:
+    condition: ${output.emailCount === 1 && output.code.length === 6}
+    label: "One email with a 6 digit code"
+- runScript:
+    file: ../../scripts/probe-count.js
+    env:
+      TABLE: "profiles"
+- assertTrue:
+    condition: ${output.rowCount === output.profilesAtStart}
+    label: "No profile before the code is confirmed"
+
+# 5. Refused codes: empty, not 6 digits, wrong
+- tapOn:
+    id: "account-submit"
+- assertVisible: "Enter the code from the email\\."
+- assertVisible: "Confirm your email"
+- runFlow:
+    file: ../../subflows/replace-text.yaml
+    env:
+      ID: "account-code"
+      TEXT: "123"
+- hideKeyboard
+- tapOn:
+    id: "account-submit"
+- assertVisible: "The code is the 6 digits from the email\\."
+- assertVisible: "Confirm your email"
+# The real code plus one, so it can't match by chance
+- evalScript: ${output.wrongCode = String((Number(output.code) + 1) % 1000000).padStart(6, "0")}
+- runFlow:
+    file: ../../subflows/replace-text.yaml
+    env:
+      ID: "account-code"
+      TEXT: ${output.wrongCode}
+- hideKeyboard
+- tapOn:
+    id: "account-submit"
+- extendedWaitUntil:
+    visible: "The code is wrong or has expired"
+    timeout: 10000
+- assertVisible: "Confirm your email"
+- assertNotVisible: "You're signed up!"
+- runScript:
+    file: ../../scripts/probe-count.js
+    env:
+      TABLE: "profiles"
+- assertTrue:
+    condition: ${output.rowCount === output.profilesAtStart}
+    label: "No profile after refused codes"
+
+# 6. Back to the sign up form. The email is kept, the rest is cleared.
+- tapOn: "Back to sign up"
+- assertNotVisible: "Confirm your email"
+# Kept as typed
+- assertVisible:
+    id: "account-email"
+    text: " noa\\.levi@e2e\\.test "
+- assertVisible: "Sign up"
+# Exactly these three problems: name and both passwords are empty, and the
+# email isn't (secure fields don't expose their text, so this is the check)
+- tapOn:
+    id: "account-submit"
+- assertVisible: "Full name is required\\.\nPassword is required\\.\nPlease confirm your password\\."
+- assertNotVisible: "Confirm your email"
+# Signing up again sends another code
+- runFlow:
+    file: ../../subflows/fill-signup.yaml
+    env:
+      NAME: "Noa Levi"
+      EMAIL: "noa.levi@e2e.test"
+      PASSWORD: "${E2E_PASSWORD}"
+      CONFIRM: "${E2E_PASSWORD}"
+- tapOn:
+    id: "account-submit"
+- extendedWaitUntil:
+    visible: "Confirm your email"
+    timeout: 10000
+- runScript:
+    file: ../../scripts/mailpit-code.js
+    env:
+      EMAIL: "noa.levi@e2e.test"
+- assertTrue:
+    condition: ${output.emailCount === 2 && output.code.length === 6}
+    label: "Signing up again emailed a second code"
+- evalScript: ${output.secondCode = output.code}
+
+# 7. "Send a new code" emails another one
+- tapOn: "Send a new code"
+- extendedWaitUntil:
+    visible: "Code sent, check your email"
+    timeout: 10000
+- assertVisible: "Confirm your email"
+- runScript:
+    file: ../../scripts/mailpit-code.js
+    env:
+      EMAIL: "noa.levi@e2e.test"
+- assertTrue:
+    condition: ${output.emailCount === 3 && output.code.length === 6}
+    label: "A third email with a 6 digit code"
+
+# 7. The new code replaced the previous one, which is now refused
+- runFlow:
+    file: ../../subflows/replace-text.yaml
+    env:
+      ID: "account-code"
+      TEXT: ${output.secondCode}
+- hideKeyboard
+- tapOn:
+    id: "account-submit"
+- extendedWaitUntil:
+    visible: "The code is wrong or has expired"
+    timeout: 10000
+- assertVisible: "Confirm your email"
+
+# 7. The newest code confirms the account
+- runFlow:
+    file: ../../subflows/replace-text.yaml
+    env:
+      ID: "account-code"
+      TEXT: ${output.code}
+- hideKeyboard
+- tapOn:
+    id: "account-submit"
+- extendedWaitUntil:
+    visible: "You're signed up!"
+    timeout: 10000
+- assertVisible:
+    text: "Account"
+    selected: true
+- assertVisible: "Noa Levi"
+- assertVisible: "noa\\.levi@e2e\\.test"
+- assertVisible: "Change username"
+- assertNotVisible: "Confirm your email"
+- assertNotVisible:
+    id: "account-submit"
+- runScript:
+    file: ../../scripts/probe-count.js
+    env:
+      TABLE: "profiles"
+- assertTrue:
+    condition: ${output.rowCount === output.profilesAtStart + 1}
+    label: "The new account's profile exists once confirmed"
+
+# 8a. The recipes screen greets the account by name
+- tapOn: "Recipes"
+- assertVisible: "Hello, Noa Levi!"
+- assertNotVisible: "Hello, Anonymous Chef!"
+
+# 8c. Restore and purchase don't ask to log in. Restore goes first: after a
+#     cancelled test purchase, a new account's restore never finishes
+#     (README, bugs)
+- tapOn: "Premium"
+- scrollUntilVisible:
+    element: "Restore purchase"
+- tapOn: "Restore purchase"
+- extendedWaitUntil:
+    visible: "No previous purchase found"
+    timeout: 15000
+- assertNotVisible: "Login required"
+- scrollUntilVisible:
+    element: "Purchase"
+- tapOn: "Purchase"
+# The store's purchase sheet for the plan selected by default (yearly)
+- extendedWaitUntil:
+    visible: "Test Store Purchase"
+    timeout: 15000
+- assertVisible: "(?s).*Product: annual_subscription_1.*"
+- assertNotVisible: "Login required"
+- tapOn: "(?i)cancel"
+- extendedWaitUntil:
+    notVisible: "Test Store Purchase"
+    timeout: 5000
+# Cancelling is quiet, and the button is back
+- extendedWaitUntil:
+    visible: "Purchase"
+    timeout: 5000
+- assertNotVisible: "Purchase failed"
+- assertNotVisible: "Login required"
+
+# 8c. AI import opens, from the form and from the create menu, with the
+#     free imports a new account gets
+- tapOn:
+    id: "tab-create"
+- tapOn: "New recipe"
+- tapOn:
+    id: "ai-import"
+- assertVisible: "Import a recipe"
+- assertNotVisible: "Log in to try importing"
+- assertVisible: "Paste a link here"
+- assertVisible: "Free imports left: 3"
+- back
+- assertNotVisible: "Import a recipe"
+
+- tapOn:
+    id: "tab-create"
+- tapOn: "Import from a link"
+- assertVisible: "Import a recipe"
+- assertNotVisible: "Log in to try importing"
+- assertVisible: "Paste a link here"
+- assertVisible: "Free imports left: 3"
+- back
+- assertNotVisible: "Import a recipe"
+
+- tapOn:
+    id: "tab-create"
+- tapOn: "Import from a photo"
+- assertVisible: "Import a recipe"
+- assertNotVisible: "Log in to try importing"
+- assertVisible: "Take a photo"
+- assertVisible: "From gallery"
+- assertVisible: "Free imports left: 3"
+- back
+- assertNotVisible: "Import a recipe"
+
+# 8b. The Account tab shows the account, not a form
+- tapOn: "Account"
+- assertVisible: "Noa Levi"
+- assertVisible: "noa\\.levi@e2e\\.test"
+- assertNotVisible:
+    id: "account-submit"
+- assertNotVisible: "Sign up here"
+
+# 9. Still signed in after a relaunch
+- stopApp
+- launchApp
+- extendedWaitUntil:
+    visible: "Hello, Noa Levi!"
+    timeout: 20000
+- tapOn: "Account"
+- assertVisible: "Noa Levi"
+- assertVisible: "noa\\.levi@e2e\\.test"
+- assertVisible: "Change username"
+- assertNotVisible:
+    id: "account-submit"
+# The free imports left come from the server for the logged in user, so the
+# server still accepts the saved session (a guest is asked to log in)
+- tapOn:
+    id: "tab-create"
+- tapOn: "New recipe"
+- tapOn:
+    id: "ai-import"
+- assertVisible: "Import a recipe"
+- assertVisible: "Free imports left: 3"
+- assertNotVisible: "Log in to try importing"
+- back
+- assertNotVisible: "Import a recipe"
+
+# 3. Checked last, so a slow delivery would be counted too
+- runScript:
+    file: ../../scripts/mailpit-code.js
+    env:
+      EMAIL: "owner@e2e.test"
+- assertTrue:
+    condition: ${output.emailCount === 0}
+    label: "Still no email to the existing account"

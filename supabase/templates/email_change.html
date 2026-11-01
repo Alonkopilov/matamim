@@ -1,0 +1,33 @@
+{{ if eq .Data.language "en" }}
+<div dir="ltr" style="font-family: Arial, sans-serif; font-size: 16px; color: #141517;">
+  {{ if eq .SendingTo .NewEmail }}
+  <h2>Confirm your new Matamim email</h2>
+  <p>You asked to change your email from {{ .Email }} to this address. Enter this code in the app to confirm it:</p>
+  {{ else }}
+  <h2>Confirm it's you</h2>
+  <p>Someone asked to change the email of your Matamim account to {{ .NewEmail }}. If it was you, enter this code in the app:</p>
+  {{ end }}
+  <p style="font-size: 32px; font-weight: bold; letter-spacing: 6px;">{{ .Token }}</p>
+  {{ if eq .SendingTo .NewEmail }}
+  <p>The code is valid for one hour. If you didn't ask for this, you can ignore this email.</p>
+  {{ else }}
+  <p>The code is valid for one hour. If it wasn't you, don't share the code with anyone and change your password.</p>
+  {{ end }}
+</div>
+{{ else }}
+<div dir="rtl" style="font-family: Arial, sans-serif; font-size: 16px; color: #141517; text-align: right;">
+  {{ if eq .SendingTo .NewEmail }}
+  <h2>אישור המייל החדש במטעמים</h2>
+  <p>ביקשתם לשנות את המייל מ־<span dir="ltr">{{ .Email }}</span> לכתובת הזאת. הזינו את הקוד הזה באפליקציה כדי לאשר אותה:</p>
+  {{ else }}
+  <h2>אימות שזה את/ה</h2>
+  <p>התקבלה בקשה לשנות את המייל של החשבון שלך במטעמים ל־<span dir="ltr">{{ .NewEmail }}</span>. אם זה את/ה, הזינו את הקוד הזה באפליקציה:</p>
+  {{ end }}
+  <p dir="ltr" style="font-size: 32px; font-weight: bold; letter-spacing: 6px; text-align: right;">{{ .Token }}</p>
+  {{ if eq .SendingTo .NewEmail }}
+  <p>הקוד בתוקף לשעה. אם לא ביקשתם את זה, אפשר להתעלם מהמייל הזה.</p>
+  {{ else }}
+  <p>הקוד בתוקף לשעה. אם זה לא את/ה, אל תשתפו את הקוד עם אף אחד ושנו את הסיסמה.</p>
+  {{ end }}
+</div>
+{{ end }}

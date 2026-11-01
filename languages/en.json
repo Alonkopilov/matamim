@@ -1,0 +1,10 @@
+{
+  "ios": {
+    "CFBundleDisplayName": "Matamim",
+    "NSPhotoLibraryUsageDescription": "The app accesses your photos to let you upload recipe pictures and import recipes from photos.",
+    "NSCameraUsageDescription": "The camera is used only when you choose to photograph a recipe to import it."
+  },
+  "android": {
+    "app_name": "Matamim"
+  }
+}

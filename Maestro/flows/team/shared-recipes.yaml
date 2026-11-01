@@ -1,0 +1,331 @@
+# A free member sees the team's recipes, can't change them, and keeps up with
+# the host's edits and the team's changes when it refreshes. Its own recipe
+# stays private.
+#
+# Seed: sharehost@ (premium) hosts Share Team with Host Pie (magenta photo),
+# Host Soup (ingredient "Beans") and Host Bread. viewer@ (free, "Share
+# Viewer") and sharemate@ (premium, cloud sync on, "Share Mate", owns Mate
+# Curry) are members. latejoin@ (free, "Late Joiner") has no team. sharehost@
+# and latejoin@ are driven through the probe, viewer@ and sharemate@ use the
+# app.
+#
+# Checks:
+#   1. The member sees the host's three recipes and the other member's
+#   2. A team recipe opens with its photo and its owner's name, without Edit
+#      and Delete. Back is there.
+#   3. The member's own recipe has Edit and Delete and no owner line, stays
+#      off the cloud, and the teammate can't see it
+#   4. The host edits one recipe and deletes another from "another device".
+#      Pull to refresh shows the edit and drops the deleted one, on screen and
+#      on the device
+#   5. The team screen doesn't change until refreshed: a rename and a new
+#      member show only after the refresh button
+#   6. Another member sees the current team recipes, and not the first
+#      member's private one or the deleted one
+appId: com.matamim.app.e2e
+name: Team - shared recipes
+tags:
+  - team
+---
+- runScript:
+    file: ../../scripts/revenuecat-grant.js
+    env:
+      USER: "e2e00000-0000-0000-0000-000000000028"
+- launchApp:
+    clearState: true
+- extendedWaitUntil:
+    visible: "Create my first recipe"
+    timeout: 20000
+
+# 1. What the member sees
+- runFlow:
+    file: ../../subflows/login.yaml
+    env:
+      EMAIL: "viewer@e2e.test"
+      NAME: "Share Viewer"
+- tapOn: "Recipes"
+- retry:
+    maxRetries: 20
+    commands:
+      - runScript: ../../scripts/probe-device-recipes.js
+      - assertTrue:
+          condition: ${output.deviceTeamNames === "Host Bread|Host Pie|Host Soup|Mate Curry"}
+          label: "The device has the team's four recipes"
+- runFlow:
+    file: ../../subflows/find-card.yaml
+    env:
+      NAME: "Host Soup"
+- runFlow:
+    file: ../../subflows/find-card.yaml
+    env:
+      NAME: "Host Bread"
+- runFlow:
+    file: ../../subflows/find-card.yaml
+    env:
+      NAME: "Mate Curry"
+
+# 2. A team recipe is read only
+- runFlow:
+    file: ../../subflows/find-card.yaml
+    env:
+      NAME: "Host Pie"
+- tapOn: "Host Pie"
+- extendedWaitUntil:
+    visible: "Recipe by Share Host"
+    timeout: 10000
+- assertVisible: "Back"
+- assertNotVisible: "Edit"
+- assertNotVisible: "Delete"
+- retry:
+    maxRetries: 15
+    commands:
+      - waitForAnimationToEnd:
+          timeout: 1000
+      - runScript:
+          file: ../../scripts/probe-screen-color.js
+          env:
+            RGB: "ff00ff"
+      - assertTrue:
+          condition: ${output.screenColorShare > 0.02}
+          label: "Host Pie's photo is shown"
+- tapOn: "Back"
+- runFlow:
+    file: ../../subflows/find-card.yaml
+    env:
+      NAME: "Mate Curry"
+# Centered, so the floating tab bar isn't over the card
+- scrollUntilVisible:
+    element: "Mate Curry"
+    centerElement: true
+- tapOn: "Mate Curry"
+- extendedWaitUntil:
+    visible: "Recipe by Share Mate"
+    timeout: 10000
+- assertVisible: "Back"
+- assertNotVisible: "Edit"
+- assertNotVisible: "Delete"
+- tapOn: "Back"
+
+# 3. The member's own recipe
+- tapOn:
+    id: "tab-create"
+- tapOn: "New recipe"
+- runFlow:
+    file: ../../subflows/create-meal-recipe.yaml
+    env:
+      NAME: "Viewer Salad"
+      MEAL: "Lunch"
+- runFlow:
+    file: ../../subflows/find-card.yaml
+    env:
+      NAME: "Viewer Salad"
+- tapOn: "Viewer Salad"
+- extendedWaitUntil:
+    visible: "Edit"
+    timeout: 10000
+- assertVisible: "Delete"
+- assertVisible: "Back"
+- assertNotVisible: "Recipe by.*"
+- tapOn: "Back"
+- waitForAnimationToEnd:
+    timeout: 3000
+- runScript:
+    file: ../../scripts/probe-cloud.js
+    env:
+      USER: "e2e00000-0000-0000-0000-000000000027"
+- assertTrue:
+    condition: ${output.cloudRowCount === 0}
+    label: "The free member has nothing in the cloud"
+- runScript:
+    file: ../../scripts/probe-visible-recipes.js
+    env:
+      EMAIL: "sharemate@e2e.test"
+- assertTrue:
+    condition: ${output.visibleNames.indexOf("Viewer Salad") === -1 && output.visibleNames.indexOf("Host Pie") !== -1}
+    label: "The teammate can see the team's recipes but not Viewer Salad"
+
+# 4. The host edits and deletes from another device
+- runScript:
+    file: ../../scripts/other-device-edit.js
+    env:
+      EMAIL: "sharehost@e2e.test"
+      ID: "e2ec0000-0000-0000-0000-000000002602"
+      NAME: "Host Soup Deluxe"
+      INGREDIENT: "Lentils"
+      DELETED: "0"
+- runScript:
+    file: ../../scripts/other-device-edit.js
+    env:
+      EMAIL: "sharehost@e2e.test"
+      ID: "e2ec0000-0000-0000-0000-000000002603"
+      NAME: ""
+      INGREDIENT: ""
+      DELETED: "1"
+# Not on the member's screen or device before it refreshes
+- runScript: ../../scripts/probe-device-recipes.js
+- assertTrue:
+    condition: ${output.deviceTeamNames === "Host Bread|Host Pie|Host Soup|Mate Curry"}
+    label: "The device still has the old recipes"
+- runFlow:
+    file: ../../subflows/find-card.yaml
+    env:
+      NAME: "Host Bread"
+- runFlow:
+    file: ../../subflows/find-card.yaml
+    env:
+      NAME: "Host Soup"
+- scrollUntilVisible:
+    element:
+      id: "recipe-search"
+    direction: UP
+- swipe:
+    start: 50%, 35%
+    end: 50%, 85%
+- retry:
+    maxRetries: 15
+    commands:
+      - waitForAnimationToEnd:
+          timeout: 1000
+      - runScript: ../../scripts/probe-device-recipes.js
+      - assertTrue:
+          condition: ${output.deviceTeamNames === "Host Pie|Host Soup Deluxe|Mate Curry"}
+          label: "The device has the edited recipe and not the deleted one"
+- runFlow:
+    file: ../../subflows/find-card.yaml
+    env:
+      NAME: "Host Soup Deluxe"
+- scrollUntilVisible:
+    element: "That's all for now.*"
+- assertNotVisible: "Host Bread"
+- assertNotVisible: "Host Soup"
+- runFlow:
+    file: ../../subflows/find-card.yaml
+    env:
+      NAME: "Host Soup Deluxe"
+# Centered, so the floating tab bar isn't over the card
+- scrollUntilVisible:
+    element: "Host Soup Deluxe"
+    centerElement: true
+- tapOn: "Host Soup Deluxe"
+- extendedWaitUntil:
+    visible: "Recipe by Share Host"
+    timeout: 10000
+# An ingredient row is one text, its amount then its name ("1  Lentils")
+- scrollUntilVisible:
+    element: ".*Lentils.*"
+- assertNotVisible: ".*Beans.*"
+- tapOn: "Back"
+
+# 5. The team screen only changes when refreshed
+- retry:
+    maxRetries: 5
+    commands:
+      - tapOn: "Team"
+      - extendedWaitUntil:
+          visible: "The culinary team"
+          timeout: 4000
+- assertVisible:
+    id: "team-title"
+    text: "Share Team"
+- assertVisible: "Members: 3"
+- runScript:
+    file: ../../scripts/as-user.js
+    env:
+      EMAIL: "sharehost@e2e.test"
+      FN: "edit-team"
+      BODY: '{"team_id": "e2e7ea00-0000-0000-0000-000000000026", "title": "Share Team Two"}'
+- assertTrue:
+    condition: ${output.asUserStatus >= 200 && output.asUserStatus < 300}
+    label: "The host renamed the team"
+- runScript:
+    file: ../../scripts/as-user.js
+    env:
+      EMAIL: "sharehost@e2e.test"
+      FN: "generate-invite"
+- assertTrue:
+    condition: ${/^\d\d\d\d\d\d\d\d$/.test(output.inviteCode)}
+    label: "The host got a code"
+# Built apart, Maestro's ${} reads up to the last } of a string
+- evalScript: '${output.joinBody = JSON.stringify({ code: output.inviteCode })}'
+- runScript:
+    file: ../../scripts/as-user.js
+    env:
+      EMAIL: "latejoin@e2e.test"
+      FN: "join-team"
+      BODY: ${output.joinBody}
+- assertTrue:
+    condition: ${output.asUserStatus >= 200 && output.asUserStatus < 300}
+    label: "Late Joiner joined"
+- runScript:
+    file: ../../scripts/probe-team.js
+    env:
+      TEAM: "e2e7ea00-0000-0000-0000-000000000026"
+      USER: ""
+- assertTrue:
+    condition: ${output.teamTitle === 'Share Team Two' && output.teamMembers.split('|').length === 3}
+    label: "On the server the team is renamed and has 3 members"
+# Without refreshing the screen is as it was
+- assertVisible:
+    id: "team-title"
+    text: "Share Team"
+- assertVisible: "Members: 3"
+- assertNotVisible: "Late Joiner"
+- tapOn:
+    id: "team-refresh"
+- extendedWaitUntil:
+    visible:
+      id: "team-title"
+      text: "Share Team Two"
+    timeout: 15000
+- assertVisible: "Members: 4"
+- scrollUntilVisible:
+    element: "Late Joiner"
+
+# 6. Another member sees the current recipes
+- tapOn: "Account"
+- scrollUntilVisible:
+    element: "Delete account"
+- tapOn: "Log out"
+- extendedWaitUntil:
+    visible: "(?s)Your recipes are saved only on this device.*"
+    timeout: 5000
+- tapOn:
+    id: "alert-destructive"
+# Viewer Salad is a change that never uploads, so logging out restarts the
+# app on the Recipes tab, with the member's recipes gone
+- extendedWaitUntil:
+    visible: "Create my first recipe"
+    timeout: 20000
+- tapOn: "Account"
+- extendedWaitUntil:
+    visible:
+      id: "account-submit"
+    timeout: 10000
+- runFlow:
+    file: ../../subflows/login.yaml
+    env:
+      EMAIL: "sharemate@e2e.test"
+      NAME: "Share Mate"
+- tapOn: "Recipes"
+- extendedWaitUntil:
+    visible: "Host Soup Deluxe"
+    timeout: 20000
+- runFlow:
+    file: ../../subflows/find-card.yaml
+    env:
+      NAME: "Host Pie"
+- runFlow:
+    file: ../../subflows/find-card.yaml
+    env:
+      NAME: "Mate Curry"
+- scrollUntilVisible:
+    element: "That's all for now.*"
+- assertNotVisible: "Viewer Salad"
+- assertNotVisible: "Host Bread"
+- retry:
+    maxRetries: 10
+    commands:
+      - runScript: ../../scripts/probe-device-recipes.js
+      - assertTrue:
+          condition: ${output.deviceTeamNames === "Host Pie|Host Soup Deluxe" && output.deviceRecipeNames === "Mate Curry"}
+          label: "The teammate's device has the team's current recipes and its own, nothing left from the member who logged out"

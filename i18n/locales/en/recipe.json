@@ -1,0 +1,77 @@
+{
+  "titlePlaceholder": "Title",
+  "descriptionPlaceholder": "Description",
+  "ownedBy": "Recipe by {{name}}",
+  "properties": {
+    "prepTime": "Minutes",
+    "servings": "Servings",
+    "meal": "Meal",
+    "difficulty": "Difficulty",
+    "placeholder": "Value"
+  },
+  "ingredients": {
+    "title": "Ingredients",
+    "amountPlaceholder": "Amount",
+    "unitPlaceholder": "Unit",
+    "itemPlaceholder": "Item"
+  },
+  "instructions": {
+    "title": "Steps"
+  },
+  "keyboard": {
+    "next": "Next"
+  },
+  "new": {
+    "create": "Create",
+    "localOnlyNotice": "This recipe will only be saved on your device - your team members won't see it.",
+    "aiImport": "AI import",
+    "premiumOnly": "Premium only",
+    "freeImports": "{{count}} free"
+  },
+  "validation": {
+    "title": "Some recipe details are missing",
+    "missingTitle": "Missing a title",
+    "missingPrepTime": "Missing prep time",
+    "missingServings": "Missing number of servings",
+    "missingMeal": "Missing meal type",
+    "missingDifficulty": "Missing difficulty level",
+    "missingIngredients": "Missing ingredients",
+    "ingredientMissingName": "An ingredient is missing its name",
+    "missingInstructions": "Missing steps"
+  },
+  "toasts": {
+    "created": "Recipe created!",
+    "saved": "Recipe saved!",
+    "deleted": "Recipe deleted!",
+    "imageUploadFailed": "Couldn't upload the image, so it was saved on your device",
+    "imageSaveFailed": "Couldn't add the image, try another one"
+  },
+  "deleteConfirm": {
+    "title": "Delete recipe",
+    "message": "Are you sure? This recipe will be deleted permanently."
+  },
+  "discardChanges": {
+    "title": "Discard changes?",
+    "message": "Your changes to this recipe haven't been saved.",
+    "keepEditing": "Keep editing",
+    "discard": "Discard"
+  },
+  "imagePermission": {
+    "title": "Permission needed",
+    "message": "To add a photo to your recipe, allow the app to access your photos."
+  },
+  "actions": {
+    "back": "Back",
+    "edit": "Edit",
+    "preview": "Preview",
+    "delete": "Delete"
+  },
+  "cookMode": {
+    "start": "Start cooking",
+    "stepOf": "Step {{current}} of {{total}}",
+    "previous": "Previous",
+    "next": "Next",
+    "done": "Done",
+    "close": "Close"
+  }
+}
