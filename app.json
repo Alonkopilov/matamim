@@ -23,6 +23,7 @@
         "monochromeImage": "./assets/monochrome.png"
       },
       "predictiveBackGestureEnabled": false,
+      "allowBackup": false,
       "blockedPermissions": [
         "android.permission.SYSTEM_ALERT_WINDOW"
       ],
