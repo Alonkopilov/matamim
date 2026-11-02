@@ -2,6 +2,14 @@ import Anthropic from "@anthropic-ai/sdk";
 import { zodOutputFormat } from "@anthropic-ai/sdk/helpers/zod";
 import { z } from "zod";
 import { ImportError } from "./errors.ts";
+import {
+  dropElements,
+  findElements,
+  metaTags,
+  outerElement,
+  replaceTags,
+  replaceUpToLast,
+} from "./html.ts";
 import { JsonLdRecipe } from "./jsonLd.ts";
 import {
   buildRecipe,
@@ -132,38 +140,60 @@ Reading the photos:
 Rules for the fields:
 ${FIELD_RULES}`;
 
+// Elements whose text isn't the page's content
+const DROPPED_TAGS = [
+  "script",
+  "style",
+  "noscript",
+  "svg",
+  "iframe",
+  "template",
+  "header",
+  "footer",
+  "nav",
+  "aside",
+  "form",
+  "button",
+  "select",
+];
+
 // Keeps the readable text of the page and drops markup, scripts and the
-// site's navigation, so the model reads (and we pay for) only the content
+// site's navigation, so the model reads (and we pay for) only the content.
+// The html is the site's, so it's only searched through ./html.ts, whose
+// helpers run in linear time where a plain regex can take hours.
 export function pageText(html: string): string {
-  const title = html.match(/<title[^>]*>([\s\S]*?)<\/title>/i)?.[1] ?? "";
+  const title = findElements(html, ["title"])[0]?.content ?? "";
   // Pages that load their content with JavaScript, like Facebook posts,
   // often still have it in the preview text
-  const description = html.match(
-    /<meta[^>]+(?:property="og:description"|name="description")[^>]*content="([^"]*)"/i,
-  )?.[1] ?? "";
+  const description = metaTags(html)
+    .filter((tag) => /property="og:description"|name="description"/i.test(tag))
+    .map((tag) => tag.match(/content="([^"]*)"/i)?.[1])
+    .find((content) => content !== undefined) ?? "";
 
-  let body = html
-    .replace(/<!--[\s\S]*?-->/g, " ")
-    .replace(
-      /<(script|style|noscript|svg|iframe|template|header|footer|nav|aside|form|button|select)\b[\s\S]*?<\/\1>/gi,
-      " ",
-    );
+  let body = dropElements(
+    replaceUpToLast(html, "-->", /<!--[\s\S]*?-->/g, " "),
+    DROPPED_TAGS,
+  );
 
   // Most recipe sites wrap the post in <article> or <main>
-  const main = body.match(/<article\b[\s\S]*<\/article>/i)?.[0] ??
-    body.match(/<main\b[\s\S]*<\/main>/i)?.[0];
+  const main = outerElement(body, "article") ?? outerElement(body, "main");
   if (main && main.length > 2000) body = main;
 
-  const text = body
-    .replace(/<li\b[^>]*>/gi, "\n- ")
-    .replace(/<(br|\/p|\/div|\/li|\/h\d|\/tr|\/section)\b[^>]*>/gi, "\n")
-    .replace(/<h\d\b[^>]*>/gi, "\n## ")
-    .replace(/<[^>]+>/g, " ");
+  let text = replaceTags(body, /<li\b[^>]*>/gi, "\n- ");
+  text = replaceTags(
+    text,
+    /<(br|\/p|\/div|\/li|\/h\d|\/tr|\/section)\b[^>]*>/gi,
+    "\n",
+  );
+  text = replaceTags(text, /<h\d\b[^>]*>/gi, "\n## ");
+  text = replaceTags(text, /<[^>]+>/g, " ");
 
   const cleaned = decodeEntities(text)
     .replace(/[ \t ]+/g, " ")
-    .replace(/\s*\n\s*/g, "\n")
-    .replace(/\n{2,}/g, "\n")
+    // A run of whitespace with a line break in it becomes the line break.
+    // Matched as whole runs: /\s*\n\s*/ retries from every character of a
+    // long run without one.
+    .replace(/\s+/g, (space) => (space.includes("\n") ? "\n" : space))
     .trim();
 
   return toGershayim(
