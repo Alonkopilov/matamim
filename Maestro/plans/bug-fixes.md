@@ -201,7 +201,7 @@ Handle it at the one place that sees every way in: the `id` change in
   "עזבת את הקבוצה", to match the English "You left the team." This matches
   the wording of `transferred`.
 - **Dev seed.** `supabase/seed.sql` (the dev seed, not the e2e one) inserts a
-  team for alon@kopilov.me, who isn't premium, so `supabase db reset`
+  team for the dev account, who isn't premium, so `supabase db reset`
   fails with `TEAM_PREMIUM_REQUIRED`. Insert a `public.premium_entitlements`
   row for that user (`expires_at` NULL, lifetime) before the team. See
   `supabase/e2e/seed.sql` around line 56 for the shape. Check that nothing
