@@ -35,9 +35,9 @@ export default {
 
       if (rateLimitResponse) return rateLimitResponse;
 
-      // Images first: the bucket is public, so they'd stay reachable by URL
-      // after the rows are gone. If this fails the account still exists and
-      // the user can try again.
+      // Images first, so they're gone right away as the privacy policy says,
+      // not at the next orphan image purge. If this fails the account still
+      // exists and the user can try again.
       const storage = ctx.supabaseAdmin.storage.from(BUCKET);
       while (true) {
         const { data: objects, error: listError } = await storage.list(userId, {
