@@ -5,6 +5,7 @@
   "UNAUTHORIZED": "Please log in again.",
   "RATE_LIMITED": "Slow down a bit! You've hit the request limit, try again in a few seconds.",
   "TEAM_PREMIUM_REQUIRED": "Only Premium users can create or manage a team.",
+  "TEAM_HOST_NOT_PREMIUM": "This team's manager no longer has Premium, so the team can't take new members.",
   "TEAM_NAME_INVALID": "The team name must be 1 to 50 characters.",
   "ALREADY_HOSTING": "You already manage a team.",
   "MEMBER_CANNOT_HOST": "You can't manage a team while you're a member of another one.",

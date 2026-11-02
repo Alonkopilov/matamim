@@ -6,6 +6,7 @@ import {
   internalErrorResponse,
   unauthorizedResponse,
 } from "../_shared/errors.ts";
+import { isPremium } from "../_shared/premium.ts";
 import { enforceRateLimit } from "../_shared/rateLimiter.ts";
 
 export default {
@@ -62,6 +63,23 @@ export default {
 
       if (!invite) {
         return errorResponse(400, "INVITE_CODE_INVALID");
+      }
+
+      // A code made before the host's Premium ended stops working with it
+      const { data: team, error: teamError } = await ctx.supabaseAdmin
+        .from("teams")
+        .select("host_id")
+        .eq("id", invite.team_id)
+        .maybeSingle();
+
+      if (teamError) {
+        throw new Error(`Failed to fetch team: ${teamError.message}`);
+      }
+      if (!team) {
+        return errorResponse(400, "INVITE_CODE_INVALID");
+      }
+      if (!(await isPremium(ctx.supabaseAdmin, team.host_id))) {
+        return errorResponse(403, "TEAM_HOST_NOT_PREMIUM");
       }
 
       // Add user as a new member in the team
