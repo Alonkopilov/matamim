@@ -39,9 +39,18 @@ const TRACKING_PARAMS = new Set([
   "share",
 ]);
 
+function isTrackingParam(key: string): boolean {
+  const name = key.toLowerCase();
+  return name.startsWith("utm_") || TRACKING_PARAMS.has(name);
+}
+
 /**
- * Parses a user-supplied URL into the address to fetch, kept as shared so
- * the site doesn't have to redirect it (e.g. WordPress adds the trailing slash).
+ * Parses a user-supplied URL into the address to fetch, without its tracking
+ * parameters. They're removed before the fetch, not only from the cache key:
+ * a site that serves another page for one (e.g. ?share=) would otherwise have
+ * that page saved as the recipe of the link without it. The rest is kept as
+ * shared so the site doesn't have to redirect it (e.g. WordPress adds the
+ * trailing slash).
  */
 export function parseUrl(input: string): URL {
   let url: URL;
@@ -53,26 +62,29 @@ export function parseUrl(input: string): URL {
 
   assertPublicUrlShape(url);
   url.hash = "";
+  // Rewriting the query re-encodes it, so it's only done when needed
+  if ([...url.searchParams.keys()].some(isTrackingParam)) {
+    url.search = new URLSearchParams(
+      [...url.searchParams].filter(([key]) => !isTrackingParam(key)),
+    ).toString();
+  }
   return url;
 }
 
 /**
- * Strips what doesn't change the page (tracking parameters, a trailing
+ * Evens out what doesn't change the page (the parameters' order, a trailing
  * slash), so the same recipe shared from different places maps to one cache
- * entry.
+ * entry. Takes a URL from parseUrl(), which is what gets fetched.
  */
 export function cacheKey(input: URL): string {
   const url = new URL(input);
   url.hostname = url.hostname.toLowerCase();
   const params = [...url.searchParams.entries()]
-    .filter(([key]) =>
-      !key.toLowerCase().startsWith("utm_") &&
-      !TRACKING_PARAMS.has(key.toLowerCase())
-    )
     .sort(([a], [b]) => a.localeCompare(b));
   url.search = new URLSearchParams(params).toString();
+  // One slash only: "/recipe//" may be another page, like the site's 404
   if (url.pathname.length > 1 && url.pathname.endsWith("/")) {
-    url.pathname = url.pathname.replace(/\/+$/, "");
+    url.pathname = url.pathname.slice(0, -1);
   }
   return url.toString();
 }
