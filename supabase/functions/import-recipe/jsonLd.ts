@@ -1,3 +1,4 @@
+import { findElements } from "./html.ts";
 import { cleanText } from "./recipe.ts";
 
 type Json = any;
@@ -90,11 +91,11 @@ function findRecipe(node: Json, depth = 0): Json | null {
  * @returns null when there is none, or it is missing ingredients or steps.
  */
 export function extractJsonLdRecipe(html: string): JsonLdRecipe | null {
-  const scripts = html.matchAll(
-    /<script[^>]+type=["']?application\/ld\+json["']?[^>]*>([\s\S]*?)<\/script>/gi,
+  const scripts = findElements(html, ["script"]).filter(({ openingTag }) =>
+    /type=["']?application\/ld\+json/i.test(openingTag)
   );
 
-  for (const [, content] of scripts) {
+  for (const { content } of scripts) {
     let data: Json;
     try {
       data = JSON.parse(content.trim());

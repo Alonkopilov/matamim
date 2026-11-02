@@ -5,6 +5,7 @@ import {
   internalErrorResponse,
   unauthorizedResponse,
 } from "../_shared/errors.ts";
+import { isActiveEntitlement } from "../_shared/premium.ts";
 import { enforceRateLimit } from "../_shared/rateLimiter.ts";
 
 export default {
@@ -118,7 +119,7 @@ export default {
       }
 
       // Which teammates have premium, for the badges in the member list.
-      // Same rule as is_user_premium(): no expiry means a lifetime purchase.
+      // Members are listed whether or not the host still has Premium.
       const { host_id, team_members } = team as {
         host_id: string;
         team_members: { user_id: string }[];
@@ -139,7 +140,7 @@ export default {
       const now = new Date();
       const premiumUserIds = entitlements
         .filter((row: { expires_at: string | null }) =>
-          row.expires_at === null || new Date(row.expires_at) > now
+          isActiveEntitlement(row, now)
         )
         .map((row: { user_id: string }) => row.user_id);
 

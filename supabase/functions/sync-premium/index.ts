@@ -26,11 +26,10 @@ export default {
       const isPremium = await refreshPremium(ctx.supabaseAdmin, userId);
 
       return Response.json({ success: true, isPremium });
-    } catch (err: any) {
-      return Response.json(
-        { error: err.message || "Internal Server Error" },
-        { status: 500 },
-      );
+    } catch (err) {
+      // Details stay in the function logs
+      console.error("sync-premium failed:", err);
+      return Response.json({ error: "Internal Server Error" }, { status: 500 });
     }
   }),
 };

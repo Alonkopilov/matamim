@@ -96,7 +96,6 @@ The auth emails are in Hebrew unless the user's app is in English. The app saves
    REVENUECAT_SECRET_API_KEY=...
    REVENUECAT_ENTITLEMENT_ID=...
    REVENUECAT_WEBHOOK_AUTH=...      # Must match the webhook's Authorization header in RevenueCat
-   ALLOW_SANDBOX_PREMIUM=true       # Lets Test Store and sandbox purchases count as premium
 
    # Recipe import with AI
    ANTHROPIC_API_KEY=...
@@ -114,6 +113,8 @@ The auth emails are in Hebrew unless the user's app is in English. The app saves
    ```
 
    RevenueCat's webhooks can't reach a local Supabase, so locally premium only arrives through `sync-premium`.
+
+   Test Store, sandbox and TestFlight purchases only count as premium against a local Supabase (`SUPABASE_URL` on `kong` or `localhost`). Production ignores them, because RevenueCat entitlements are shared by the whole project. To give an internal tester premium in production, open their customer in RevenueCat (the customer ID is their Supabase user ID) and grant the `premium` entitlement as a promotional entitlement.
 
 5. Run the app. It uses a dev client, not Expo Go.
 

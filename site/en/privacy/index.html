@@ -4,9 +4,6 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Privacy Policy – Matamim</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;700&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="/style.css" />
   </head>
   <body>
@@ -17,7 +14,7 @@
       </header>
 
       <h1>Privacy Policy</h1>
-      <p class="updated">Last updated: October 10, 2026</p>
+      <p class="updated">Last updated: November 2, 2026</p>
 
       <h2>Who we are</h2>
       <p>Matamim is a recipe app developed and run by Alon Kopilov, an independent developer in Israel ("we"). For any privacy question, write to <a href="mailto:support@matamim.org">support@matamim.org</a>.</p>
@@ -37,6 +34,7 @@
         <li><strong>Import statistics:</strong> for each import we keep facts about it with your user ID, such as whether it worked, how long it took and what it cost, and never the link, the photos, the text or the recipe. They help us keep imports working well and are deleted with your account.</li>
         <li><strong>Crash reports:</strong> when the app crashes or hits an error, it sends a report with your user ID (a random number, not your email), device and app details, and the app's last steps before the error. Reports don't include your email, your name or your recipes.</li>
         <li><strong>Abuse prevention:</strong> your user ID is used to count requests, so a single account can't overload the service.</li>
+        <li><strong>Server logs:</strong> our servers keep technical logs of requests, such as their time and IP address, of errors, and of parts of public web pages being imported. They never include photos or text you shared.</li>
       </ul>
       <p>We don't collect your location, contacts or advertising ID. The app has no ads, doesn't track you across apps or websites, and we don't sell your data.</p>
 
@@ -47,11 +45,13 @@
         <li><strong>Service providers</strong> that run parts of the app for us, only for that purpose:
           <ul>
             <li>Supabase: accounts, the database and photo storage</li>
+            <li>Resend: sending our emails, such as your sign-up and password reset codes</li>
             <li>RevenueCat: managing subscriptions</li>
             <li>Sentry: crash reports</li>
             <li>Anthropic: reading recipes from web pages, social posts, shared text and photos during import</li>
             <li>YouTube API Services: reading the description of a YouTube video you import. See the <a href="https://www.youtube.com/t/terms">YouTube Terms of Service</a> and the <a href="https://policies.google.com/privacy">Google Privacy Policy</a>.</li>
             <li>Upstash: counting requests</li>
+            <li>Expo: delivering app updates</li>
             <li>Apple and Google: app distribution and payments</li>
           </ul>
           These providers may store data on servers outside Israel.
@@ -61,11 +61,12 @@
 
       <h2>How long we keep it</h2>
       <ul>
-        <li>Your account and recipes are kept as long as your account exists.</li>
+        <li>Your account is kept as long as it exists, and your recipes and photos are kept in the cloud while cloud sync is on.</li>
+        <li>When you turn cloud sync off, or when Premium ends, your recipes stay on your device, and their copy in the cloud is deleted 30 days later, with their photos. Until then your team still sees them.</li>
         <li>A recipe you delete is removed from our servers within 30 days, and its photo shortly after.</li>
         <li>Deleting your account immediately deletes your account, recipes, photos and team membership. Copies in backups are overwritten within a limited time.</li>
         <li>Logging out deletes your recipes and photos from that device.</li>
-        <li>Crash reports are deleted automatically after a limited time.</li>
+        <li>Crash reports and server logs are deleted automatically after a limited time.</li>
       </ul>
 
       <h2>Your rights</h2>

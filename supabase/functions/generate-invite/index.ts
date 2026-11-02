@@ -6,6 +6,7 @@ import {
   internalErrorResponse,
   unauthorizedResponse,
 } from "../_shared/errors.ts";
+import { isPremium } from "../_shared/premium.ts";
 import { enforceRateLimit } from "../_shared/rateLimiter.ts";
 
 export default {
@@ -33,6 +34,11 @@ export default {
       if (!existingTeam) {
         console.warn("Only a team host can create invites");
         return errorResponse(400, "NOT_TEAM_HOST");
+      }
+
+      // The team stays after the host's Premium ends, but can't take new members
+      if (!(await isPremium(ctx.supabaseAdmin, userId))) {
+        return errorResponse(403, "TEAM_PREMIUM_REQUIRED");
       }
 
       // Expired codes are never reused, clear them so the code space stays free

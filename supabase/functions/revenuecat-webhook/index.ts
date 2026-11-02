@@ -48,12 +48,11 @@ export default {
       }
 
       return Response.json({ success: true });
-    } catch (err: any) {
-      // A non-2xx response makes RevenueCat retry the event
-      return Response.json(
-        { error: err.message || "Internal Server Error" },
-        { status: 500 },
-      );
+    } catch (err) {
+      // Details stay in the function logs. A non-2xx response makes RevenueCat
+      // retry the event
+      console.error("revenuecat-webhook failed:", err);
+      return Response.json({ error: "Internal Server Error" }, { status: 500 });
     }
   }),
 };

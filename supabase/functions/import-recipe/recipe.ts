@@ -1,3 +1,5 @@
+import { replaceTags } from "./html.ts";
+
 // Matches the columns of public.recipes that an import fills in. Ingredient and
 // instruction ids are added by the app.
 export interface ImportedRecipe {
@@ -80,7 +82,7 @@ function tidyBrackets(text: string): string {
 export function cleanText(text: unknown): string {
   if (typeof text !== "string") return "";
   return tidyBrackets(
-    toGershayim(decodeEntities(text.replace(/<[^>]*>/g, " ")))
+    toGershayim(decodeEntities(replaceTags(text, /<[^>]*>/g, " ")))
       .replace(/\s+/g, " "),
   ).trim();
 }

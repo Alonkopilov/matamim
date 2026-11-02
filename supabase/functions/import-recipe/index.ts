@@ -5,6 +5,7 @@ import {
   internalErrorResponse,
   unauthorizedResponse,
 } from "../_shared/errors.ts";
+import { isPremium } from "../_shared/premium.ts";
 import { enforceRateLimit } from "../_shared/rateLimiter.ts";
 import {
   AiStats,
@@ -49,16 +50,6 @@ type ImportEvent = Partial<AiStats> & {
   unsure_words?: number;
 };
 
-async function isPremium(supabaseAdmin: AdminClient, userId: string) {
-  // Same rule as is_user_premium(): no expiry means a lifetime purchase
-  const { data, error } = await supabaseAdmin
-    .from("premium_entitlements")
-    .select("expires_at")
-    .eq("user_id", userId)
-    .maybeSingle();
-  if (error) throw new Error(`Premium check failed: ${error.message}`);
-  return !!data && (data.expires_at === null || new Date(data.expires_at) > new Date());
-}
 
 // Free users try a few imports before buying Premium
 async function freeImportsLeft(supabaseAdmin: AdminClient, userId: string) {
