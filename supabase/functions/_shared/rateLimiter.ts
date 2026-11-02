@@ -46,7 +46,14 @@ export async function enforceRateLimit(
       prefix: `@ratelimit:${actionName}`, // Isolate counts between endpoints
     });
 
-    const { success, limit, reset, remaining } = await ratelimit.limit(userId);
+    const { success, limit, reset, remaining, reason } = await ratelimit.limit(userId);
+
+    // When Redis doesn't answer in time, Upstash lets the request through
+    // (success: true) instead of throwing, so handle it like an outage
+    if (reason === "timeout") {
+      console.error(`Rate limiting timed out for ${actionName}`);
+      return config.failClosed ? errorResponse(503, "RATE_LIMITED") : null;
+    }
 
     if (!success) {
       const error = config.error ?? { code: "RATE_LIMITED" };
