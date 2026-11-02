@@ -341,7 +341,12 @@ export async function extractRecipeWithAi(
 
   // The schema.org times and yield are exact, so they win over the model's
   const fromData = input.kind === "json_ld" ? input.recipe : null;
-  const instructions = keepSourceSteps(result.instructions, stepsSource);
+  // Shared text is the user's own, so like photos its steps aren't logged
+  const instructions = keepSourceSteps(
+    result.instructions,
+    stepsSource,
+    input.kind !== "text",
+  );
   stats.dropped_by_check = result.instructions.length - instructions.length;
   return buildRecipe({
     name: result.name,
