@@ -1,10 +1,26 @@
 const REVENUECAT_SECRET_API_KEY = Deno.env.get("REVENUECAT_SECRET_API_KEY");
 const PREMIUM_ENTITLEMENT_ID = Deno.env.get("REVENUECAT_ENTITLEMENT_ID") ??
   "premium";
-// RevenueCat entitlements are shared by the whole project, so a free sandbox,
-// TestFlight or Test Store purchase would otherwise give real premium. Set to
-// "true" locally, and in production only while testing purchases.
-const ALLOW_SANDBOX_PREMIUM = Deno.env.get("ALLOW_SANDBOX_PREMIUM") === "true";
+// Hosts SUPABASE_URL has on a local stack (`supabase start` / `functions serve`)
+const LOCAL_HOSTS = new Set(["kong", "localhost", "127.0.0.1"]);
+
+/**
+ * Whether this runs against a local Supabase. RevenueCat entitlements are
+ * shared by the whole project, so a free sandbox, TestFlight or Test Store
+ * purchase would otherwise give real premium; they only count locally (dev
+ * and E2E). The CLI sets SUPABASE_URL and won't take it from an env file or
+ * `secrets set`, so this can't be switched on in production by mistake.
+ * Internal testers get premium from a promotional grant in RevenueCat.
+ */
+function isLocalSupabase() {
+  try {
+    return LOCAL_HOSTS.has(
+      new URL(Deno.env.get("SUPABASE_URL") ?? "").hostname,
+    );
+  } catch {
+    return false;
+  }
+}
 
 type AdminClient = { from: (table: string) => any };
 
@@ -30,7 +46,7 @@ function isTestPurchase(purchase: Purchase) {
  * purchase behind it can't be found, it can't be shown not to be a test one.
  */
 function isRealEntitlement(subscriber: any, entitlement: any, userId: string) {
-  if (ALLOW_SANDBOX_PREMIUM) return true;
+  if (isLocalSupabase()) return true;
   const purchase = entitlementPurchase(
     subscriber,
     entitlement.product_identifier,

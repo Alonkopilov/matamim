@@ -49,7 +49,6 @@ cleanup() {
 trap cleanup EXIT
 cat supabase/functions/.env >"$env_file"
 [[ -f supabase/functions/.env.e2e ]] && cat supabase/functions/.env.e2e >>"$env_file"
-echo "ALLOW_SANDBOX_PREMIUM=true" >>"$env_file"
 
 supabase functions serve --env-file "$env_file" >build/e2e/functions.log 2>&1 &
 functions_pid=$!
