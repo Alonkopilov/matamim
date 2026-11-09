@@ -203,8 +203,12 @@ export function deleteRecipe(id: string) {
 export function migrateToLoggedUser(userId: string) {
   const rawStore = recipeStore$.peek() || {};
 
-  Object.keys(rawStore).forEach((id) => {
+  Object.entries(rawStore).forEach(([id, recipe]) => {
     if (id.startsWith("_")) return;
+    // A recipe deleted in the cloud downloads as Legend-State's delete
+    // marker (a symbol), which has no owner to set. Assigning to it throws
+    // inside Legend-State's batch, after which no change reaches the screen
+    if (recipe == null || typeof recipe !== "object") return;
 
     const currentUserId = recipeStore$[id].user_id.peek();
     if (currentUserId === "guest" || !currentUserId) {
