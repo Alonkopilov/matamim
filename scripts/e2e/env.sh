@@ -44,6 +44,21 @@ assert_local_supabase() {
     die "local Supabase API is at $api_url, expected $LOCAL_API_URL"
 }
 
+# The environment the e2e JS bundle is built with. The Supabase variables
+# are overridden here (Expo prefers them over .env files), so the
+# production URL and key never enter the bundle
+export_e2e_bundle_env() {
+  export EXPO_PUBLIC_E2E=1
+  export EXPO_PUBLIC_SUPABASE_URL="$LOCAL_API_URL"
+  export EXPO_PUBLIC_SUPABASE_LOCAL_URL="$LOCAL_API_URL"
+  EXPO_PUBLIC_SUPABASE_KEY="$(cd "$ROOT" && supabase status -o json |
+    python3 -c 'import json,sys; print(json.load(sys.stdin)["PUBLISHABLE_KEY"])')"
+  export EXPO_PUBLIC_SUPABASE_KEY
+  export EXPO_PUBLIC_SUPABASE_LOCAL_KEY="$EXPO_PUBLIC_SUPABASE_KEY"
+  export EXPO_PUBLIC_SENTRY_DSN=""
+  export SENTRY_DISABLE_AUTO_UPLOAD=true
+}
+
 # The Sentry ingest host, e2e builds must not report to it
 sentry_host() {
   grep -E '^EXPO_PUBLIC_SENTRY_DSN=' "$ROOT/.env" | cut -d= -f2- |

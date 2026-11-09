@@ -14,15 +14,8 @@ restore() {
 }
 trap restore EXIT
 
-export EXPO_PUBLIC_E2E=1
-export EXPO_PUBLIC_SUPABASE_URL="$LOCAL_API_URL"
-export EXPO_PUBLIC_SUPABASE_LOCAL_URL="$LOCAL_API_URL"
-export EXPO_PUBLIC_SUPABASE_KEY="$(supabase status -o json | python3 -c 'import json,sys; print(json.load(sys.stdin)["PUBLISHABLE_KEY"])')"
-export EXPO_PUBLIC_SUPABASE_LOCAL_KEY="$EXPO_PUBLIC_SUPABASE_KEY"
-export EXPO_PUBLIC_SENTRY_DSN=""
-export SENTRY_DISABLE_AUTO_UPLOAD=true
-
 assert_local_supabase
+export_e2e_bundle_env
 npx expo prebuild --platform android --clean --no-install
 (cd android && ./gradlew assembleRelease)
 

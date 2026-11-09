@@ -30,6 +30,7 @@ supabase link --project-ref <prod ref>
 
 supabase start
 scripts/e2e/build-android.sh   # ~17 min clean, rebuild after app changes
+scripts/e2e/swap-bundle.sh     # ~2 min, swaps only the JS bundle into the APK
 scripts/e2e/run.sh             # all flows in Maestro/flows
 scripts/e2e/run.sh Maestro/flows/<flow>.yaml
 scripts/e2e/emulator.sh stop   # when done, the emulator is left running
@@ -45,6 +46,13 @@ it, so another emulator or phone can stay connected.
 then the e2e seed). It stops the e2e app first: one left open by an earlier
 run would talk to the database while it's reset, e.g. writing back premium
 from that run's purchase.
+
+`swap-bundle.sh` is for changes to JS only, app code or a package without
+native code. It bundles and compiles the JS like the Gradle build, swaps it
+into `build/e2e/matamim-e2e.apk` and re-signs it with the same debug key,
+keeping the previous APK as `matamim-e2e.before-swap.apk`. Native code stays
+what the last `build-android.sh` compiled, so run that before trusting a
+full suite for a release.
 
 Optional: `supabase/functions/.env.e2e` (gitignored, see `.env.e2e.example`)
 overrides `supabase/functions/.env` during runs, e.g. a separate
