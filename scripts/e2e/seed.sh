@@ -46,4 +46,29 @@ done
 for user in 14 15 16 17 18 26; do
   upload_photo "e2e00000-0000-0000-0000-0000000000$user/e2ef0700-0000-0000-0000-000000000001.jpg" "$magenta" image/jpeg
 done
+
+# The store screenshots' demo kitchens (scripts/e2e/screenshots.sh), only on
+# request. Dish NN's photo is store/screenshots/photos/<DEMO_DISHES[NN-1]>.*,
+# saved as a JPEG of at most 1600 px like the app's own uploads.
+if [[ "${E2E_SCREENSHOTS:-}" == 1 ]]; then
+  docker exec -i "$LOCAL_DB_CONTAINER" \
+    psql -v ON_ERROR_STOP=1 -q -U postgres -d postgres <supabase/e2e/screenshots.sql >/dev/null
+  dish_photo="$(mktemp)"
+  trap 'rm -f "$photo" "$magenta" "$dish_photo"' EXIT
+  for i in "${!DEMO_DISHES[@]}"; do
+    source_photo="$(demo_photo "${DEMO_DISHES[$i]}")"
+    python3 -I -c 'import sys; from PIL import Image, ImageOps
+im = ImageOps.exif_transpose(Image.open(sys.argv[1])).convert("RGB")
+im.thumbnail((1600, 1600))
+im.save(sys.argv[2], "JPEG", quality=90)' "$source_photo" "$dish_photo"
+    dish="$(printf '%02d' $((i + 1)))"
+    # Dishes 07 and 08 are the teammate's
+    for kitchen in 6 7; do
+      owner=0
+      ((i >= 6)) && owner=1
+      upload_photo "e2e00000-0000-0000-0000-0000000000$kitchen$owner/e2ef0700-0000-0000-0000-0000000060$dish.jpg" "$dish_photo" image/jpeg
+    done
+  done
+  echo "e2e: screenshot demo data seeded"
+fi
 echo "e2e: database seeded"

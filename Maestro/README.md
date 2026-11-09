@@ -50,6 +50,39 @@ Optional: `supabase/functions/.env.e2e` (gitignored, see `.env.e2e.example`)
 overrides `supabase/functions/.env` during runs, e.g. a separate
 `ANTHROPIC_API_KEY`.
 
+## Store screenshots
+
+```sh
+scripts/e2e/screenshots.sh   # wipes the local database, like run.sh
+```
+
+Captures the App Store and Play screenshots in English and Hebrew into
+`store/screenshots/raw/` (gitignored), e.g. `en-01-recipes.png` …
+`he-06-create.png`. It's not a test: `Maestro/screenshots/` is outside
+`flows/`, so the suite doesn't run it.
+
+- Data: `supabase/e2e/screenshots.sql`, loaded only when
+  `E2E_SCREENSHOTS=1`. It holds two copies of one kitchen, an English one
+  and a Hebrew one. Each has a premium host with cloud sync on (Dana /
+  דנה, ids `…0060` / `…0070`), a premium teammate who shares two recipes
+  (Tom / תום, `…0061` / `…0071`) and three free members, all with
+  `@example.com` emails. The team screen is captured as the teammate,
+  since the host's view shows emails and remove buttons. Everything else
+  is captured as the host.
+- Photos: one per dish in `store/screenshots/photos/`, named after
+  `DEMO_DISHES` in `scripts/e2e/env.sh` (`shakshuka.jpg` …). jpg, png or
+  webp; `seed.sh` turns them into JPEGs of at most 1600 px. The script
+  stops first if one is missing.
+- Status bar: Android demo mode (09:41, full battery and Wi-Fi), turned
+  off when the script exits. Demo mode doesn't hide notification icons,
+  such as Safety Center's "no screen lock" shield, so the script snoozes
+  every notification for 3 hours.
+- Hebrew: the flow logs in in English, then switches the language from the
+  recipes screen, and the app reloads right to left.
+- Screens: `Maestro/screenshots/capture.yaml`, opening the app as each
+  account through `open-as.yaml`. Each screen's texts in both languages
+  are in `all.yaml`.
+
 ## Guardrails against production
 
 | Layer | Guard |

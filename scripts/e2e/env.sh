@@ -14,6 +14,20 @@ E2E_SERIAL="emulator-$E2E_EMULATOR_PORT"
 
 die() { echo "e2e: $*" >&2; exit 1; }
 
+# The store screenshots' dishes, in the order of supabase/e2e/screenshots.sql
+# (dish 01 first). Each needs a photo in store/screenshots/photos/.
+DEMO_DISHES=(shakshuka lemon-pasta roast-chicken greek-salad chocolate-babka banana-pancakes lentil-soup apple-crumble)
+DEMO_PHOTOS_DIR="$ROOT/store/screenshots/photos"
+
+# The dish's photo (any of jpg, jpeg, png, webp), or fails naming the file
+demo_photo() {
+  local ext
+  for ext in jpg jpeg png webp; do
+    [[ -f "$DEMO_PHOTOS_DIR/$1.$ext" ]] && { echo "$DEMO_PHOTOS_DIR/$1.$ext"; return; }
+  done
+  die "no photo for $1, add store/screenshots/photos/$1.jpg"
+}
+
 # The production Supabase host, read from .env, so the guardrails can look for it
 prod_host() {
   grep -E '^EXPO_PUBLIC_SUPABASE_URL=' "$ROOT/.env" | cut -d= -f2- |

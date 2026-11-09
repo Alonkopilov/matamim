@@ -1,0 +1,48 @@
+# Opens the app fresh as one of the demo kitchens' accounts, in LANG, on the
+# recipes screen with the toasts gone. From capture.yaml.
+#
+# env: LANG, USER (id), EMAIL, NAME, HELLO and GREETING (the recipes screen's
+# greeting and toast in LANG), WAIT_FOR (a recipe title in LANG on its list)
+appId: com.matamim.app.e2e
+---
+# Premium in the database; the app checks RevenueCat too
+- runScript:
+    file: ../scripts/revenuecat-grant.js
+    env:
+      USER: ${USER}
+- launchApp:
+    clearState: true
+- extendedWaitUntil:
+    visible: "Create my first recipe"
+    timeout: 20000
+# In English: the app starts in it, and a language choice is reset by clearState
+- runFlow:
+    file: ../subflows/login.yaml
+    env:
+      EMAIL: ${EMAIL}
+      NAME: ${NAME}
+- tapOn: "Recipes"
+- extendedWaitUntil:
+    visible: ${WAIT_FOR}
+    timeout: 20000
+
+# The app reloads to flip the layout to right to left
+- runFlow:
+    when:
+      true: ${LANG === "he"}
+    commands:
+      - tapOn: "Language"
+      - tapOn: "עברית"
+      - extendedWaitUntil:
+          visible: ${HELLO}
+          timeout: 30000
+      - extendedWaitUntil:
+          visible: ${WAIT_FOR}
+          timeout: 20000
+
+- extendedWaitUntil:
+    notVisible: "Welcome back.*"
+    timeout: 10000
+- extendedWaitUntil:
+    notVisible: ${GREETING}
+    timeout: 10000
