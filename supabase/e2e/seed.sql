@@ -145,20 +145,20 @@ SELECT pg_temp.e2e_cloud_sync('e2e00000-0000-0000-0000-000000000013', false);
 -- with a photo (uploaded by seed.sh) and one deleted, which never shows
 SELECT pg_temp.e2e_user('e2e00000-0000-0000-0000-000000000014', 'cloud@e2e.test', 'Cloud Cook');
 SELECT pg_temp.e2e_cloud_sync('e2e00000-0000-0000-0000-000000000014', true);
-SELECT pg_temp.e2e_recipe('e2ec0000-0000-0000-0000-000000001401', 'e2e00000-0000-0000-0000-000000000014', 'Magenta Soup', 'dinner', 'Beets', 'e2e00000-0000-0000-0000-000000000014/seed-magenta.jpg');
+SELECT pg_temp.e2e_recipe('e2ec0000-0000-0000-0000-000000001401', 'e2e00000-0000-0000-0000-000000000014', 'Magenta Soup', 'dinner', 'Beets', 'e2e00000-0000-0000-0000-000000000014/e2ef0700-0000-0000-0000-000000000001.jpg');
 SELECT pg_temp.e2e_recipe('e2ec0000-0000-0000-0000-000000001402', 'e2e00000-0000-0000-0000-000000000014', 'Cloud Bread', 'breakfast', 'Flour');
 SELECT pg_temp.e2e_recipe('e2ec0000-0000-0000-0000-000000001403', 'e2e00000-0000-0000-0000-000000000014', 'Removed Stew', 'dinner', 'Beans', '', NULL, true);
 
 -- flows/premium/offline.yaml
 SELECT pg_temp.e2e_user('e2e00000-0000-0000-0000-000000000015', 'offline@e2e.test', 'Offline Cook');
 SELECT pg_temp.e2e_cloud_sync('e2e00000-0000-0000-0000-000000000015', true);
-SELECT pg_temp.e2e_recipe('e2ec0000-0000-0000-0000-000000001501', 'e2e00000-0000-0000-0000-000000000015', 'Magenta Soup', 'dinner', 'Beets', 'e2e00000-0000-0000-0000-000000000015/seed-magenta.jpg');
+SELECT pg_temp.e2e_recipe('e2ec0000-0000-0000-0000-000000001501', 'e2e00000-0000-0000-0000-000000000015', 'Magenta Soup', 'dinner', 'Beets', 'e2e00000-0000-0000-0000-000000000015/e2ef0700-0000-0000-0000-000000000001.jpg');
 SELECT pg_temp.e2e_recipe('e2ec0000-0000-0000-0000-000000001502', 'e2e00000-0000-0000-0000-000000000015', 'Offline Bread', 'breakfast', 'Flour');
 
 -- flows/premium/sync-off.yaml
 SELECT pg_temp.e2e_user('e2e00000-0000-0000-0000-000000000016', 'syncoff@e2e.test', 'Syncoff Cook');
 SELECT pg_temp.e2e_cloud_sync('e2e00000-0000-0000-0000-000000000016', true);
-SELECT pg_temp.e2e_recipe('e2ec0000-0000-0000-0000-000000001601', 'e2e00000-0000-0000-0000-000000000016', 'Magenta Soup', 'dinner', 'Beets', 'e2e00000-0000-0000-0000-000000000016/seed-magenta.jpg');
+SELECT pg_temp.e2e_recipe('e2ec0000-0000-0000-0000-000000001601', 'e2e00000-0000-0000-0000-000000000016', 'Magenta Soup', 'dinner', 'Beets', 'e2e00000-0000-0000-0000-000000000016/e2ef0700-0000-0000-0000-000000000001.jpg');
 SELECT pg_temp.e2e_recipe('e2ec0000-0000-0000-0000-000000001602', 'e2e00000-0000-0000-0000-000000000016', 'Syncoff Bread', 'breakfast', 'Flour');
 -- The same flow runs the nightly purge, which must delete the cloud copy of a
 -- subscriber whose premium ended over 30 days ago, and keep that of an
@@ -176,7 +176,7 @@ SELECT pg_temp.e2e_recipe('e2ec0000-0000-0000-0000-000000002101', 'e2e00000-0000
 SELECT pg_temp.e2e_user('e2e00000-0000-0000-0000-000000000017', 'editor@e2e.test', 'Editor Cook');
 SELECT pg_temp.e2e_cloud_sync('e2e00000-0000-0000-0000-000000000017', true);
 SELECT pg_temp.e2e_recipe('e2ec0000-0000-0000-0000-000000001701', 'e2e00000-0000-0000-0000-000000000017', 'Editor Soup', 'lunch', 'Beets');
-SELECT pg_temp.e2e_recipe('e2ec0000-0000-0000-0000-000000001702', 'e2e00000-0000-0000-0000-000000000017', 'Magenta Pie', 'dessert', 'Apples', 'e2e00000-0000-0000-0000-000000000017/seed-magenta.jpg');
+SELECT pg_temp.e2e_recipe('e2ec0000-0000-0000-0000-000000001702', 'e2e00000-0000-0000-0000-000000000017', 'Magenta Pie', 'dessert', 'Apples', 'e2e00000-0000-0000-0000-000000000017/e2ef0700-0000-0000-0000-000000000001.jpg');
 SELECT pg_temp.e2e_recipe('e2ec0000-0000-0000-0000-000000001703', 'e2e00000-0000-0000-0000-000000000017', 'Editor Bread', 'breakfast', 'Flour');
 
 -- flows/premium/team-purge.yaml: sharer@ hosts a team with teammate@, a free
@@ -199,7 +199,7 @@ INSERT INTO public.teams (id, title, host_id) VALUES
   ('e2e7ea00-0000-0000-0000-000000000018', 'Sharing Team', 'e2e00000-0000-0000-0000-000000000018');
 INSERT INTO public.team_members (user_id, team_id) VALUES
   ('e2e00000-0000-0000-0000-000000000019', 'e2e7ea00-0000-0000-0000-000000000018');
-SELECT pg_temp.e2e_recipe('e2ec0000-0000-0000-0000-000000001801', 'e2e00000-0000-0000-0000-000000000018', 'Shared Stew', 'dinner', 'Beans', 'e2e00000-0000-0000-0000-000000000018/seed-magenta.jpg', 'e2e7ea00-0000-0000-0000-000000000018');
+SELECT pg_temp.e2e_recipe('e2ec0000-0000-0000-0000-000000001801', 'e2e00000-0000-0000-0000-000000000018', 'Shared Stew', 'dinner', 'Beans', 'e2e00000-0000-0000-0000-000000000018/e2ef0700-0000-0000-0000-000000000001.jpg', 'e2e7ea00-0000-0000-0000-000000000018');
 
 -- Team flows (flows/team/*.yaml). Premium accounts are premium in the database
 -- from premium_entitlements below, and each flow that logs one in on the device
@@ -311,7 +311,7 @@ INSERT INTO public.team_members (user_id, team_id, joined_at) VALUES
 -- Shared recipes carry their team's id, like Shared Stew. Host Pie's magenta
 -- photo is uploaded by seed.sh.
 SELECT pg_temp.e2e_recipe('e2ec0000-0000-0000-0000-000000002301', 'e2e00000-0000-0000-0000-000000000023', 'Welcome Soup', 'dinner', 'Beets', '', 'e2e7ea00-0000-0000-0000-000000000023');
-SELECT pg_temp.e2e_recipe('e2ec0000-0000-0000-0000-000000002601', 'e2e00000-0000-0000-0000-000000000026', 'Host Pie', 'dessert', 'Apples', 'e2e00000-0000-0000-0000-000000000026/seed-magenta.jpg', 'e2e7ea00-0000-0000-0000-000000000026');
+SELECT pg_temp.e2e_recipe('e2ec0000-0000-0000-0000-000000002601', 'e2e00000-0000-0000-0000-000000000026', 'Host Pie', 'dessert', 'Apples', 'e2e00000-0000-0000-0000-000000000026/e2ef0700-0000-0000-0000-000000000001.jpg', 'e2e7ea00-0000-0000-0000-000000000026');
 SELECT pg_temp.e2e_recipe('e2ec0000-0000-0000-0000-000000002602', 'e2e00000-0000-0000-0000-000000000026', 'Host Soup', 'dinner', 'Beans', '', 'e2e7ea00-0000-0000-0000-000000000026');
 SELECT pg_temp.e2e_recipe('e2ec0000-0000-0000-0000-000000002603', 'e2e00000-0000-0000-0000-000000000026', 'Host Bread', 'breakfast', 'Flour', '', 'e2e7ea00-0000-0000-0000-000000000026');
 SELECT pg_temp.e2e_recipe('e2ec0000-0000-0000-0000-000000002801', 'e2e00000-0000-0000-0000-000000000028', 'Mate Curry', 'dinner', 'Rice', '', 'e2e7ea00-0000-0000-0000-000000000026');

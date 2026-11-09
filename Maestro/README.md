@@ -22,6 +22,11 @@ and RevenueCat (Test Store only).
 ```sh
 # Once: install Maestro
 curl -fsSL "https://get.maestro.mobile.dev" | bash
+# Once per clone: start the prod project's service versions, not the CLI's
+# older defaults (the probe counts rows in Auth tables older Auth lacks).
+# Without api.supabase.com, copying supabase/.temp/*-version and
+# storage-migration from a linked clone does the same
+supabase link --project-ref <prod ref>
 
 supabase start
 scripts/e2e/build-android.sh   # ~17 min clean, rebuild after app changes
@@ -303,3 +308,5 @@ through `Maestro/scripts/*.js` (Maestro's `runScript` runs on the host):
 | Team flows planning | **The host's leave dialog always said "Delete team".** The trash icon warned "All members will leave it" even when a Premium member exists and the team is handed over to them (`leave_team()` promotes the oldest one) | Fixed: with a Premium member the dialog says "Leave team" with a message about the hand-over (`team.leave.transferMessage`). Covered by `team/host-leaves.yaml` |
 | Flow 24 | The probe's network cut left the app's open connection to Kong working, so an edit made "offline" uploaded at once (Kong logged the PATCH) and the card was rightly orange | Fixed in the probe (restarts Kong on cut), test setup only |
 | Flow 12 | An e2e app left open by an earlier run wrote premium from that run's purchase into the freshly seeded database | Fixed in `run.sh` (stops the app before seeding), test setup only |
+| Security fix F1 | The seeded magenta photo, `<user>/seed-magenta.jpg`, wasn't shown, kept or deleted: the app now only follows `<uuid>/<uuid>.<ext>` paths | Fixed: the seed names it `e2ef0700-0000-0000-0000-000000000001.jpg`, test setup only |
+| Fresh clone | The probe's user rows check failed on `auth.mfa_recovery_code_sets`: the clone wasn't linked, so `supabase start` ran the CLI's default, older Auth (v2.192.0, prod is v2.197.0) without that table | `supabase link` once per clone (see Running), test setup only |

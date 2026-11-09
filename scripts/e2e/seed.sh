@@ -41,7 +41,9 @@ upload_photo() {
 for user in e2e00000-0000-0000-0000-000000000009 e2e00000-0000-0000-0000-000000000010; do
   upload_photo "$user/seed-photo.png" "$photo" image/png
 done
+# Named <uuid>.jpg like the app's uploads, the only paths the app loads
+# (storagePath in utils/imageStorage.ts)
 for user in 14 15 16 17 18 26; do
-  upload_photo "e2e00000-0000-0000-0000-0000000000$user/seed-magenta.jpg" "$magenta" image/jpeg
+  upload_photo "e2e00000-0000-0000-0000-0000000000$user/e2ef0700-0000-0000-0000-000000000001.jpg" "$magenta" image/jpeg
 done
 echo "e2e: database seeded"
