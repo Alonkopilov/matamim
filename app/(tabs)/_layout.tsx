@@ -4,7 +4,7 @@ import { team$ } from "@/stores/teamStore";
 import { showToast } from "@/stores/toastStore";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { observer } from "@legendapp/state/react";
-import { Tabs } from "expo-router";
+import { Tabs } from "expo-router/js-tabs";
 import {
   type ComponentProps,
   type ReactNode,
@@ -13,7 +13,7 @@ import {
   useState,
 } from "react";
 import { useTranslation } from "react-i18next";
-import { type ColorValue, StyleSheet, View } from "react-native";
+import { type ColorValue, StyleSheet, type ViewInstance } from "react-native";
 import { BlurTargetView } from "expo-blur";
 import FloatingTabBar from "@/components/FloatingTabBar";
 
@@ -28,7 +28,9 @@ function createTabIcon(focusedName: IoniconName, unfocusedName: IoniconName) {
     return (
       <MaterialCommunityIcons
         name={focused ? focusedName : unfocusedName}
-        color={color}
+        // Our tab bar always passes a string, the type also allows the
+        // platform color forms the icon font can't take
+        color={typeof color === "string" ? color : undefined}
         size={24}
       />
     );
@@ -40,12 +42,15 @@ function createTabIcon(focusedName: IoniconName, unfocusedName: IoniconName) {
 const hasTeam = () =>
   team$.id.get() !== null && getCurrentUserId(true) !== "guest";
 
+// Opens on the recipes tab, and Android back returns to it (backBehavior)
+export const unstable_settings = { anchor: "index" };
+
 export default observer(function TabLayout() {
   const { t } = useTranslation();
   // Each screen's blur target, for the tab bar to blur the focused one. Set
   // once laid out, since BlurView reads its target's ref only when it changes
   const [blurTargets, setBlurTargets] = useState<
-    Record<string, RefObject<View | null>>
+    Record<string, RefObject<ViewInstance | null>>
   >({});
 
   return (
@@ -89,9 +94,8 @@ export default observer(function TabLayout() {
         },
       }}
       detachInactiveScreens={false}
-      initialRouteName="index"
-      // Android back returns to the recipes tab. The default goes to the first
-      // declared tab (account)
+      // Android back returns to the recipes tab (the anchor). The default goes
+      // to the first declared tab (account)
       backBehavior="initialRoute"
     >
       <Tabs.Screen
@@ -157,10 +161,10 @@ function ScreenBlurTarget({
   onReady,
   children,
 }: {
-  onReady: (ref: RefObject<View | null>) => void;
+  onReady: (ref: RefObject<ViewInstance | null>) => void;
   children: ReactNode;
 }) {
-  const ref = useRef<View>(null);
+  const ref = useRef<ViewInstance>(null);
   return (
     <BlurTargetView
       ref={ref}

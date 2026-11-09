@@ -2,12 +2,19 @@ import CreateMenu from "@/components/CreateMenu";
 import { colors, fonts, spacing } from "@/constants/theme";
 import { BlurView } from "expo-blur";
 import * as Haptics from "expo-haptics";
+import { router } from "expo-router";
 import {
   BottomTabBarHeightCallbackContext,
   type BottomTabBarProps,
 } from "expo-router/js-tabs";
 import { type RefObject, useContext, useState } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import {
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+  type ViewInstance,
+} from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const BAR_HEIGHT = 68;
@@ -19,7 +26,7 @@ const CREATE_ROUTE = "[id]";
 type Props = BottomTabBarProps & {
   // What the bar blurs behind it on Android, a BlurTargetView around the tabs
   // Undefined until it's ready, when the bar is only tinted
-  blurTarget?: RefObject<View | null>;
+  blurTarget?: RefObject<ViewInstance | null>;
 };
 
 // Floats over the screens, so scrollable content needs bottom padding of
@@ -27,7 +34,8 @@ type Props = BottomTabBarProps & {
 export default function FloatingTabBar({
   state,
   descriptors,
-  navigation,
+  emitter,
+  navigateToTab,
   blurTarget,
 }: Props) {
   const insets = useSafeAreaInsets();
@@ -63,7 +71,7 @@ export default function FloatingTabBar({
             typeof options.title === "string" ? options.title : route.name;
 
           const onPress = () => {
-            const event = navigation.emit({
+            const event = emitter.emit({
               type: "tabPress",
               target: route.key,
               canPreventDefault: true,
@@ -75,11 +83,11 @@ export default function FloatingTabBar({
               );
             } else if (!focused) {
               Haptics.selectionAsync();
-              navigation.navigate(route.name, route.params);
+              navigateToTab(route.key);
             }
           };
           const onLongPress = () =>
-            navigation.emit({ type: "tabLongPress", target: route.key });
+            emitter.emit({ type: "tabLongPress", target: route.key });
 
           if (route.name === CREATE_ROUTE) {
             return (
@@ -141,7 +149,9 @@ export default function FloatingTabBar({
       <CreateMenu
         visible={isCreateMenuOpen}
         onClose={() => setIsCreateMenuOpen(false)}
-        onOpenNewRecipe={() => navigation.navigate(CREATE_ROUTE, { id: "new" })}
+        onOpenNewRecipe={() =>
+          router.navigate({ pathname: "/[id]", params: { id: "new" } })
+        }
       />
     </View>
   );

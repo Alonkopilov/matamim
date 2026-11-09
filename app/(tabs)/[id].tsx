@@ -79,7 +79,9 @@ import {
   StyleSheet,
   Text,
   TextInput,
+  type TextInputInstance,
   View,
+  type ViewInstance,
 } from "react-native";
 import Animated, {
   Extrapolation,
@@ -109,8 +111,9 @@ export default observer(function RecipeCard() {
   const insets = useSafeAreaInsets();
   // What the floating buttons blur on Android: the photo and the content
   // under them. Set once laid out, BlurView reads it only when it changes
-  const backdropRef = useRef<View>(null);
-  const [blurTarget, setBlurTarget] = useState<RefObject<View | null>>();
+  const backdropRef = useRef<ViewInstance>(null);
+  const [blurTarget, setBlurTarget] =
+    useState<RefObject<ViewInstance | null>>();
   // Android (edge-to-edge) doesn't resize the window for the keyboard, so pad
   // the screen by the keyboard's height. This keeps the accessory bar on top of
   // the keyboard and shrinks the ScrollView, so the native scroll-to-focused
@@ -120,10 +123,10 @@ export default observer(function RecipeCard() {
   const androidKeyboardPadding = useAnimatedStyle(() =>
     isAndroid ? { paddingBottom: keyboard.height.value } : {},
   );
-  const titleRef = useRef<TextInput>(null);
-  const descriptionRef = useRef<TextInput>(null);
+  const titleRef = useRef<TextInputInstance>(null);
+  const descriptionRef = useRef<TextInputInstance>(null);
   const ingredientsRef = useRef<IngredientRowRefs[]>([]);
-  const instructionsRef = useRef<TextInput[]>([]);
+  const instructionsRef = useRef<TextInputInstance[]>([]);
 
   useObserve(() => {
     const showEvent =

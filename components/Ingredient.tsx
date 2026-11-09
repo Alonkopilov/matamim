@@ -7,7 +7,14 @@ import { Observable } from "@legendapp/state";
 import { Computed } from "@legendapp/state/react";
 import * as Haptics from "expo-haptics";
 import { useTranslation } from "react-i18next";
-import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import {
+  Pressable,
+  StyleSheet,
+  Text,
+  TextInput,
+  type TextInputInstance,
+  View,
+} from "react-native";
 
 type Props = {
   currentIndex: number;
@@ -38,7 +45,7 @@ export default function Ingredient({
 
   // Kept in the parent so the next input can be focused on submit
   const setInputRef =
-    (field: keyof IngredientRowRefs) => (el: TextInput | null) => {
+    (field: keyof IngredientRowRefs) => (el: TextInputInstance | null) => {
       const rows = ingredientRefs.current;
       rows[currentIndex] ??= { amount: null, unit: null, item: null };
       rows[currentIndex][field] = el;

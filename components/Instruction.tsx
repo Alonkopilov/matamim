@@ -5,12 +5,18 @@ import FontAwesome6 from "@expo/vector-icons/FontAwesome6";
 import { Observable } from "@legendapp/state";
 import { Computed } from "@legendapp/state/react";
 import { $Text } from "@legendapp/state/react-native";
-import { Pressable, StyleSheet, TextInput, View } from "react-native";
+import {
+  Pressable,
+  StyleSheet,
+  TextInput,
+  type TextInputInstance,
+  View,
+} from "react-native";
 
 type Props = {
   step$: Observable<Instruction>;
   isEditMode$: Observable<boolean>;
-  instructionsRef: React.RefObject<TextInput[]>;
+  instructionsRef: React.RefObject<TextInputInstance[]>;
   currentIndex: number;
   currentFocus$: Observable<string>;
   // Direction of the recipe's content, null keeps the app's
