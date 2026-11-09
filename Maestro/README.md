@@ -22,9 +22,15 @@ and RevenueCat (Test Store only).
 ```sh
 # Once: install Maestro
 curl -fsSL "https://get.maestro.mobile.dev" | bash
+# Once per clone: start the prod project's service versions, not the CLI's
+# older defaults (the probe counts rows in Auth tables older Auth lacks).
+# Without api.supabase.com, copying supabase/.temp/*-version and
+# storage-migration from a linked clone does the same
+supabase link --project-ref <prod ref>
 
 supabase start
 scripts/e2e/build-android.sh   # ~17 min clean, rebuild after app changes
+scripts/e2e/swap-bundle.sh     # ~2 min, swaps only the JS bundle into the APK
 scripts/e2e/run.sh             # all flows in Maestro/flows
 scripts/e2e/run.sh Maestro/flows/<flow>.yaml
 scripts/e2e/emulator.sh stop   # when done, the emulator is left running
@@ -41,9 +47,49 @@ then the e2e seed). It stops the e2e app first: one left open by an earlier
 run would talk to the database while it's reset, e.g. writing back premium
 from that run's purchase.
 
+`swap-bundle.sh` is for changes to JS only, app code or a package without
+native code. It bundles and compiles the JS like the Gradle build, swaps it
+into `build/e2e/matamim-e2e.apk` and re-signs it with the same debug key,
+keeping the previous APK as `matamim-e2e.before-swap.apk`. Native code stays
+what the last `build-android.sh` compiled, so run that before trusting a
+full suite for a release.
+
 Optional: `supabase/functions/.env.e2e` (gitignored, see `.env.e2e.example`)
 overrides `supabase/functions/.env` during runs, e.g. a separate
 `ANTHROPIC_API_KEY`.
+
+## Store screenshots
+
+```sh
+scripts/e2e/screenshots.sh   # wipes the local database, like run.sh
+```
+
+Captures the App Store and Play screenshots in English and Hebrew into
+`store/screenshots/raw/` (gitignored), e.g. `en-01-recipes.png` …
+`he-06-create.png`. It's not a test: `Maestro/screenshots/` is outside
+`flows/`, so the suite doesn't run it.
+
+- Data: `supabase/e2e/screenshots.sql`, loaded only when
+  `E2E_SCREENSHOTS=1`. It holds two copies of one kitchen, an English one
+  and a Hebrew one. Each has a premium host with cloud sync on (Dana /
+  דנה, ids `…0060` / `…0070`), a premium teammate who shares two recipes
+  (Tom / תום, `…0061` / `…0071`) and three free members, all with
+  `@example.com` emails. The team screen is captured as the teammate,
+  since the host's view shows emails and remove buttons. Everything else
+  is captured as the host.
+- Photos: one per dish in `store/screenshots/photos/`, named after
+  `DEMO_DISHES` in `scripts/e2e/env.sh` (`shakshuka.jpg` …). jpg, png or
+  webp; `seed.sh` turns them into JPEGs of at most 1600 px. The script
+  stops first if one is missing.
+- Status bar: Android demo mode (09:41, full battery and Wi-Fi), turned
+  off when the script exits. Demo mode doesn't hide notification icons,
+  such as Safety Center's "no screen lock" shield, so the script snoozes
+  every notification for 3 hours.
+- Hebrew: the flow logs in in English, then switches the language from the
+  recipes screen, and the app reloads right to left.
+- Screens: `Maestro/screenshots/capture.yaml`, opening the app as each
+  account through `open-as.yaml`. Each screen's texts in both languages
+  are in `all.yaml`.
 
 ## Guardrails against production
 
@@ -303,3 +349,8 @@ through `Maestro/scripts/*.js` (Maestro's `runScript` runs on the host):
 | Team flows planning | **The host's leave dialog always said "Delete team".** The trash icon warned "All members will leave it" even when a Premium member exists and the team is handed over to them (`leave_team()` promotes the oldest one) | Fixed: with a Premium member the dialog says "Leave team" with a message about the hand-over (`team.leave.transferMessage`). Covered by `team/host-leaves.yaml` |
 | Flow 24 | The probe's network cut left the app's open connection to Kong working, so an edit made "offline" uploaded at once (Kong logged the PATCH) and the card was rightly orange | Fixed in the probe (restarts Kong on cut), test setup only |
 | Flow 12 | An e2e app left open by an earlier run wrote premium from that run's purchase into the freshly seeded database | Fixed in `run.sh` (stops the app before seeding), test setup only |
+| Security fix F1 | The seeded magenta photo, `<user>/seed-magenta.jpg`, wasn't shown, kept or deleted: the app now only follows `<uuid>/<uuid>.<ext>` paths | Fixed: the seed names it `e2ef0700-0000-0000-0000-000000000001.jpg`, test setup only |
+| Fresh clone | The probe's user rows check failed on `auth.mfa_recovery_code_sets`: the clone wasn't linked, so `supabase start` ran the CLI's default, older Auth (v2.192.0, prod is v2.197.0) without that table | `supabase link` once per clone (see Running), test setup only |
+| Expo 58 upgrade | **Recipe cards were left in stale places after the list changed.** With Reanimated 4.7 and FlashList 2.3, the cards' `entering` animation (FadeInDown) kept the other cards where they were: a new card was drawn over an old one and missing from the accessibility tree, and after a relaunch a card overlapped the one above it, so a tap on the upper card's title hit the lower card. 8 flows failed | Fixed: the cards fade in with a plain animated style on mount (`CardEnter` in `RecipeList.tsx`). Covered by `premium/turn-on-sync.yaml`, `premium/offline.yaml` and every flow that creates a recipe |
+| Expo 58 upgrade | **Logging in could freeze the screen.** Moving a guest's recipes to the account called `assign` on Legend-State's delete marker (a symbol) for a recipe deleted in the cloud. It threw inside Legend-State's batch, whose `endBatch` has no `try/finally`, so no store change reached the screen again (the login toast stayed up, logout wasn't shown). Intermittent: only when the deleted recipe downloaded first | Fixed: `migrateToLoggedUser` skips anything that isn't a recipe object. Covered by `premium/fresh-install.yaml` (Removed Stew) |
+| Chrome 156 | The emulator's Chrome updated itself (149 to 156) and its custom tab stopped showing the page title, so the "Terms of Use – Matamim" check failed on a correctly loaded page | Fixed in `guest/premium.yaml`: waits for the pages' "Last updated" text instead, keeps the `url_bar` check, test only |

@@ -14,6 +14,20 @@ E2E_SERIAL="emulator-$E2E_EMULATOR_PORT"
 
 die() { echo "e2e: $*" >&2; exit 1; }
 
+# The store screenshots' dishes, in the order of supabase/e2e/screenshots.sql
+# (dish 01 first). Each needs a photo in store/screenshots/photos/.
+DEMO_DISHES=(shakshuka lemon-pasta roast-chicken greek-salad chocolate-babka banana-pancakes lentil-soup apple-crumble)
+DEMO_PHOTOS_DIR="$ROOT/store/screenshots/photos"
+
+# The dish's photo (any of jpg, jpeg, png, webp), or fails naming the file
+demo_photo() {
+  local ext
+  for ext in jpg jpeg png webp; do
+    [[ -f "$DEMO_PHOTOS_DIR/$1.$ext" ]] && { echo "$DEMO_PHOTOS_DIR/$1.$ext"; return; }
+  done
+  die "no photo for $1, add store/screenshots/photos/$1.jpg"
+}
+
 # The production Supabase host, read from .env, so the guardrails can look for it
 prod_host() {
   grep -E '^EXPO_PUBLIC_SUPABASE_URL=' "$ROOT/.env" | cut -d= -f2- |
@@ -28,6 +42,21 @@ assert_local_supabase() {
     die "local Supabase is not running (run: supabase start)"
   [[ "$api_url" == "$LOCAL_API_URL" ]] ||
     die "local Supabase API is at $api_url, expected $LOCAL_API_URL"
+}
+
+# The environment the e2e JS bundle is built with. The Supabase variables
+# are overridden here (Expo prefers them over .env files), so the
+# production URL and key never enter the bundle
+export_e2e_bundle_env() {
+  export EXPO_PUBLIC_E2E=1
+  export EXPO_PUBLIC_SUPABASE_URL="$LOCAL_API_URL"
+  export EXPO_PUBLIC_SUPABASE_LOCAL_URL="$LOCAL_API_URL"
+  EXPO_PUBLIC_SUPABASE_KEY="$(cd "$ROOT" && supabase status -o json |
+    python3 -c 'import json,sys; print(json.load(sys.stdin)["PUBLISHABLE_KEY"])')"
+  export EXPO_PUBLIC_SUPABASE_KEY
+  export EXPO_PUBLIC_SUPABASE_LOCAL_KEY="$EXPO_PUBLIC_SUPABASE_KEY"
+  export EXPO_PUBLIC_SENTRY_DSN=""
+  export SENTRY_DISABLE_AUTO_UPLOAD=true
 }
 
 # The Sentry ingest host, e2e builds must not report to it

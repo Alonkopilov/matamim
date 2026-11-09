@@ -1,4 +1,4 @@
-import { TextInput } from "react-native";
+import type { TextInputInstance } from "react-native";
 
 export interface Ingredient {
   id: string;
@@ -33,9 +33,9 @@ export interface Recipe {
 }
 
 export interface IngredientRowRefs {
-  amount: TextInput | null;
-  unit: TextInput | null;
-  item: TextInput | null;
+  amount: TextInputInstance | null;
+  unit: TextInputInstance | null;
+  item: TextInputInstance | null;
 }
 
 export const EMPTY_RECIPE: Recipe = {

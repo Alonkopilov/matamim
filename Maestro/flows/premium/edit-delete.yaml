@@ -64,7 +64,7 @@ onFlowComplete:
       USER: "e2e00000-0000-0000-0000-000000000017"
 - evalScript: ${output.soupId = output.cloudRecipe["Editor Soup"].id}
 - assertTrue:
-    condition: ${output.cloudNames === "Editor Bread|Editor Soup|Magenta Pie" && output.cloudImages === "e2e00000-0000-0000-0000-000000000017/seed-magenta.jpg"}
+    condition: ${output.cloudNames === "Editor Bread|Editor Soup|Magenta Pie" && output.cloudImages === "e2e00000-0000-0000-0000-000000000017/e2ef0700-0000-0000-0000-000000000001.jpg"}
     label: "Starts with the three recipes and the photo in the cloud"
 
 # 1. Title, meal and ingredient
@@ -157,7 +157,7 @@ onFlowComplete:
           env:
             USER: "e2e00000-0000-0000-0000-000000000017"
       - assertTrue:
-          condition: ${output.cloudRecipe["Magenta Pie"].image !== "e2e00000-0000-0000-0000-000000000017/seed-magenta.jpg" && output.cloudImages === output.cloudRecipe["Magenta Pie"].image}
+          condition: ${output.cloudRecipe["Magenta Pie"].image !== "e2e00000-0000-0000-0000-000000000017/e2ef0700-0000-0000-0000-000000000001.jpg" && output.cloudImages === output.cloudRecipe["Magenta Pie"].image}
           label: "The recipe points to the new photo, the only one in Storage: the old one is deleted"
 - assertTrue:
     condition: ${output.cloudRecipe["Magenta Pie"].image.indexOf("e2e00000-0000-0000-0000-000000000017/") === 0}

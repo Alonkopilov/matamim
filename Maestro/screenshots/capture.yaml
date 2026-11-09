@@ -1,0 +1,100 @@
+# One language's store screenshots, from all.yaml. Saves:
+#   <LANG>-01-recipes      the recipes screen
+#   <LANG>-02-recipe       a recipe, from the top
+#   <LANG>-03-ingredients  its ingredients, the first four ticked
+#   <LANG>-04-cook-mode    cook mode on the first step
+#   <LANG>-05-team         the team and its members, as the teammate
+#   <LANG>-06-create       the create menu, with the AI imports
+# All as the host, except the team: a member's view shows no emails or
+# remove buttons.
+#
+# env: LANG, the host's and the teammate's accounts, and the screen texts in
+# LANG (see all.yaml)
+appId: com.matamim.app.e2e
+---
+- runFlow:
+    file: open-as.yaml
+    env:
+      USER: ${HOST_USER}
+      EMAIL: ${HOST_EMAIL}
+      NAME: ${HOST_NAME}
+      HELLO: ${HOST_HELLO}
+      GREETING: ${HOST_GREETING}
+      WAIT_FOR: ${RECIPE}
+
+# 1. Recipes, once the first photos are shown
+- retry:
+    maxRetries: 10
+    commands:
+      - runScript: ../scripts/probe-device-images.js
+      - assertTrue:
+          condition: ${output.cachedImageCount >= 2}
+          label: "The first photos are shown"
+- waitForAnimationToEnd:
+    timeout: 5000
+- takeScreenshot: ${LANG}-01-recipes
+
+# 2. A recipe from the top
+- tapOn: ${RECIPE}
+# recipe-title is only on the edit mode's input
+- extendedWaitUntil:
+    visible:
+      id: "property-meal-value"
+    timeout: 10000
+- waitForAnimationToEnd:
+    timeout: 5000
+- takeScreenshot: ${LANG}-02-recipe
+
+# 3. Its ingredients, the first four ticked. Tapping a row ticks it.
+- scrollUntilVisible:
+    element: ${INGREDIENTS}
+    centerElement: true
+- tapOn: ${INGREDIENT_1}
+- tapOn: ${INGREDIENT_2}
+- tapOn: ${INGREDIENT_3}
+- tapOn: ${INGREDIENT_4}
+- waitForAnimationToEnd:
+    timeout: 5000
+- takeScreenshot: ${LANG}-03-ingredients
+
+# 4. Cook mode
+- scrollUntilVisible:
+    element: ${COOK_START}
+    direction: UP
+- tapOn: ${COOK_START}
+- extendedWaitUntil:
+    visible: ${COOK_STEP}
+    timeout: 5000
+- waitForAnimationToEnd:
+    timeout: 5000
+- takeScreenshot: ${LANG}-04-cook-mode
+- tapOn: ${COOK_CLOSE}
+
+# 6. The create menu, before logging in as the teammate
+- tapOn: ${TAB_RECIPES}
+- tapOn:
+    id: "tab-create"
+- extendedWaitUntil:
+    visible: ${MENU_TITLE}
+    timeout: 5000
+- waitForAnimationToEnd:
+    timeout: 5000
+- takeScreenshot: ${LANG}-06-create
+
+# 5. The team, as the teammate
+- runFlow:
+    file: open-as.yaml
+    env:
+      USER: ${MATE_USER}
+      EMAIL: ${MATE_EMAIL}
+      NAME: ${MATE_NAME}
+      HELLO: ${MATE_HELLO}
+      GREETING: ${MATE_GREETING}
+      WAIT_FOR: ${MATE_RECIPE}
+- tapOn: ${TAB_TEAM}
+- extendedWaitUntil:
+    visible: "${LAST_MEMBER}.*"
+    timeout: 15000
+- waitForAnimationToEnd:
+    timeout: 5000
+- takeScreenshot: ${LANG}-05-team

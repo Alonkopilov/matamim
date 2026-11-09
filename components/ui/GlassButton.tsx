@@ -4,7 +4,7 @@ import { type ReactNode, type RefObject } from "react";
 import {
   type StyleProp,
   StyleSheet,
-  type View,
+  type ViewInstance,
   type ViewStyle,
 } from "react-native";
 
@@ -16,7 +16,7 @@ type Props = {
   children: ReactNode;
   // What it blurs on Android, a BlurTargetView it doesn't sit inside.
   // Undefined until it's laid out, when the button is only tinted
-  blurTarget?: RefObject<View | null>;
+  blurTarget?: RefObject<ViewInstance | null>;
   tint?: "dark" | "danger";
   style?: StyleProp<ViewStyle>;
 };

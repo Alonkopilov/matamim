@@ -13,14 +13,27 @@ import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
 import { useBottomTabBarHeight } from "expo-router/js-tabs";
-import { type ComponentProps, type RefObject, useEffect } from "react";
+import {
+  type ComponentProps,
+  type ReactNode,
+  type RefObject,
+  useEffect,
+  useState,
+} from "react";
 import { Trans, useTranslation } from "react-i18next";
-import { RefreshControl, StyleSheet, Text, View } from "react-native";
+import {
+  RefreshControl,
+  type StyleProp,
+  StyleSheet,
+  Text,
+  View,
+  type ViewStyle,
+} from "react-native";
 import Animated, {
   Easing,
-  FadeInDown,
   useAnimatedStyle,
   useSharedValue,
+  withDelay,
   withRepeat,
   withTiming,
 } from "react-native-reanimated";
@@ -42,13 +55,42 @@ const CARD_ASPECT_RATIO = 160 / 210;
 const CHIP_HEIGHT = 20;
 
 // The first screenful of cards rises in one after another. Recycled cells
-// don't mount again, so this only plays when the list first appears
+// don't mount again, so this only plays when a cell is first created
 const STAGGERED_CARDS = 8;
-const cardEntering = (index: number) =>
-  FadeInDown.duration(320)
-    .delay(index * 40)
-    .easing(Easing.out(Easing.cubic))
-    .withInitialValues({ transform: [{ translateY: 16 }] });
+const CARD_RISE = 16;
+
+// A plain animated style, not Reanimated's `entering`: since the Expo 58
+// upgrade (Reanimated 4.7, FlashList 2.3), a layout animation on a cell left
+// the other cards where they were after the list changed. A new card was
+// drawn over an old one, and a card overlapped the one above it.
+function CardEnter({
+  index,
+  style,
+  children,
+}: {
+  index: number;
+  style: StyleProp<ViewStyle>;
+  children: ReactNode;
+}) {
+  // The index the cell was created for, a recycled cell keeps it
+  const [delay] = useState(() => (index < STAGGERED_CARDS ? index * 40 : -1));
+  const progress = useSharedValue(delay < 0 ? 1 : 0);
+  useEffect(() => {
+    if (delay < 0) return;
+    progress.set(
+      withDelay(
+        delay,
+        withTiming(1, { duration: 320, easing: Easing.out(Easing.cubic) }),
+      ),
+    );
+  }, [delay, progress]);
+  const rise = useAnimatedStyle(() => ({
+    opacity: progress.value,
+    transform: [{ translateY: (1 - progress.value) * CARD_RISE }],
+  }));
+
+  return <Animated.View style={[style, rise]}>{children}</Animated.View>;
+}
 
 type IconName = ComponentProps<typeof MaterialCommunityIcons>["name"];
 const DIFFICULTY_ICONS: Record<string, IconName> = {
@@ -152,10 +194,7 @@ export default function RecipeList({
         const item = recipes[index];
         const difficulty = difficultyLabel(item.difficulty);
         return (
-          <Animated.View
-            style={styles.cell}
-            entering={index < STAGGERED_CARDS ? cardEntering(index) : undefined}
-          >
+          <CardEnter index={index} style={styles.cell}>
             <PressableScale
               testID="recipe-card"
               onPress={() => router.navigate(`/${item.id}`)}
@@ -223,7 +262,7 @@ export default function RecipeList({
                 </View>
               </View>
             </PressableScale>
-          </Animated.View>
+          </CardEnter>
         );
       }}
     />

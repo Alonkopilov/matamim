@@ -1,0 +1,64 @@
+# The store screenshots, in English and then Hebrew. Not a test: lives
+# outside flows/ so the suite doesn't run it. Run through
+# scripts/e2e/screenshots.sh, which seeds the demo kitchens
+# (supabase/e2e/screenshots.sql) and collects the files.
+appId: com.matamim.app.e2e
+name: Store screenshots
+---
+- runFlow:
+    file: capture.yaml
+    env:
+      LANG: "en"
+      HOST_USER: "e2e00000-0000-0000-0000-000000000060"
+      HOST_EMAIL: "dana@example.com"
+      HOST_NAME: "Dana"
+      HOST_HELLO: "Hello, Dana!"
+      HOST_GREETING: "Hi Dana!"
+      MATE_USER: "e2e00000-0000-0000-0000-000000000061"
+      MATE_EMAIL: "tom@example.com"
+      MATE_NAME: "Tom"
+      MATE_HELLO: "Hello, Tom!"
+      MATE_GREETING: "Hi Tom!"
+      MATE_RECIPE: "Red Lentil Soup"
+      RECIPE: "Shakshuka"
+      INGREDIENTS: "Ingredients"
+      # Regexes, an ingredient row reads "<amount> <unit> <item>"
+      INGREDIENT_1: ".*olive oil"
+      INGREDIENT_2: ".*onion, diced"
+      INGREDIENT_3: ".*red bell pepper, diced"
+      INGREDIENT_4: ".*garlic, sliced"
+      COOK_START: "Start cooking"
+      COOK_STEP: "Step 1 of 5"
+      COOK_CLOSE: "Close"
+      TAB_RECIPES: "Recipes"
+      TAB_TEAM: "Team"
+      LAST_MEMBER: "Noah"
+      MENU_TITLE: "What are we making?"
+- runFlow:
+    file: capture.yaml
+    env:
+      LANG: "he"
+      HOST_USER: "e2e00000-0000-0000-0000-000000000070"
+      HOST_EMAIL: "dana.levi@example.com"
+      HOST_NAME: "דנה"
+      HOST_HELLO: "שלום, דנה!"
+      HOST_GREETING: "היי דנה!"
+      MATE_USER: "e2e00000-0000-0000-0000-000000000071"
+      MATE_EMAIL: "tom.levi@example.com"
+      MATE_NAME: "תום"
+      MATE_HELLO: "שלום, תום!"
+      MATE_GREETING: "היי תום!"
+      MATE_RECIPE: "מרק עדשים כתומות"
+      RECIPE: "שקשוקה"
+      INGREDIENTS: "מרכיבים"
+      INGREDIENT_1: ".*שמן זית"
+      INGREDIENT_2: ".*בצל, קצוץ"
+      INGREDIENT_3: ".*פלפל אדום, קצוץ"
+      INGREDIENT_4: ".*שום, פרוס"
+      COOK_START: "מתחילים לבשל"
+      COOK_STEP: "שלב 1 מתוך 5"
+      COOK_CLOSE: "סגירה"
+      TAB_RECIPES: "מתכונים"
+      TAB_TEAM: "צוות"
+      LAST_MEMBER: "יואב"
+      MENU_TITLE: "מה מכינים?"

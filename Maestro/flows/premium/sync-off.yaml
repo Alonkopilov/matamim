@@ -61,7 +61,7 @@ tags:
 - evalScript: ${output.seededPhotoSize = output.cloudImageSizes}
 - evalScript: ${output.seededSoupId = output.cloudRecipe["Magenta Soup"].id}
 - assertTrue:
-    condition: ${output.cloudNames === "Magenta Soup|Syncoff Bread" && output.cloudImages === "e2e00000-0000-0000-0000-000000000016/seed-magenta.jpg" && output.cloudSetting === "true" && output.cloudOffSeconds === -1}
+    condition: ${output.cloudNames === "Magenta Soup|Syncoff Bread" && output.cloudImages === "e2e00000-0000-0000-0000-000000000016/e2ef0700-0000-0000-0000-000000000001.jpg" && output.cloudSetting === "true" && output.cloudOffSeconds === -1}
     label: "Starts with cloud sync on and both recipes and the photo in the cloud"
 
 # 1. Asks first, Cancel keeps it on
@@ -152,7 +152,7 @@ tags:
     commands:
       - runScript: ../../scripts/probe-kept-images.js
       - assertTrue:
-          condition: ${output.keptImages === "e2e00000-0000-0000-0000-000000000016_seed-magenta.jpg"}
+          condition: ${output.keptImages === "e2e00000-0000-0000-0000-000000000016_e2ef0700-0000-0000-0000-000000000001.jpg"}
           label: "The photo is copied to the device"
 - tapOn: "Recipes"
 - runFlow:
@@ -311,7 +311,7 @@ tags:
     commands:
       - runScript: ../../scripts/probe-kept-images.js
       - assertTrue:
-          condition: ${output.keptImages === "e2e00000-0000-0000-0000-000000000016_seed-magenta.jpg"}
+          condition: ${output.keptImages === "e2e00000-0000-0000-0000-000000000016_e2ef0700-0000-0000-0000-000000000001.jpg"}
           label: "The photo is copied to the device again"
 # 29 days: not yet
 - runScript:
@@ -339,7 +339,7 @@ tags:
     env:
       USER: "e2e00000-0000-0000-0000-000000000016"
 - assertTrue:
-    condition: ${output.cloudRowCount === 0 && output.cloudPurged && output.cloudImages === "e2e00000-0000-0000-0000-000000000016/seed-magenta.jpg"}
+    condition: ${output.cloudRowCount === 0 && output.cloudPurged && output.cloudImages === "e2e00000-0000-0000-0000-000000000016/e2ef0700-0000-0000-0000-000000000001.jpg"}
     label: "After 31 days every recipe row is deleted, the photo waits for the image cleanup"
 - runScript:
     file: ../../scripts/probe-cloud.js
@@ -433,7 +433,7 @@ tags:
 - assertNotVisible:
     id: "alert-cancel"
 - assertTrue:
-    condition: ${output.cloudRowCount === 3 && output.cloudRecipe["Magenta Soup"].id === output.seededSoupId && output.cloudRecipe["Magenta Soup"].firstIngredient === "Beets" && output.cloudRecipe["Magenta Soup"].image === "e2e00000-0000-0000-0000-000000000016/seed-magenta.jpg" && output.cloudRecipe["Offline Pie"].category === "dessert"}
+    condition: ${output.cloudRowCount === 3 && output.cloudRecipe["Magenta Soup"].id === output.seededSoupId && output.cloudRecipe["Magenta Soup"].firstIngredient === "Beets" && output.cloudRecipe["Magenta Soup"].image === "e2e00000-0000-0000-0000-000000000016/e2ef0700-0000-0000-0000-000000000001.jpg" && output.cloudRecipe["Offline Pie"].category === "dessert"}
     label: "Uploaded as they are on the device, with the same ids"
 - assertTrue:
     condition: ${output.cloudImageSizes === output.seededPhotoSize}

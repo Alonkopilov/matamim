@@ -13,6 +13,7 @@ import {
   NativeSyntheticEvent,
   Pressable,
   ScrollView,
+  type ScrollViewInstance,
   StyleSheet,
   Text,
   View,
@@ -93,7 +94,7 @@ export default function Property({
           ) : (
             <$Text
               testID={testID && `${testID}-value`}
-              style={[styles.propertyValue, { padding: 0 }]}
+              style={[styles.propertyValue, styles.viewPropertyValue]}
               numberOfLines={1}
               adjustsFontSizeToFit
             >
@@ -173,7 +174,7 @@ function NumberWheel({
   onConfirm,
 }: NumberWheelProps) {
   const { t } = useTranslation();
-  const scrollRef = useRef<ScrollView>(null);
+  const scrollRef = useRef<ScrollViewInstance>(null);
   const [index, setIndex] = useState(() =>
     closestIndex(values, Number.parseInt(initialValue ?? "", 10), defaultValue),
   );
@@ -278,6 +279,12 @@ const styles = StyleSheet.create({
     fontFamily: "DefaultBold",
     color: "#fff",
     textAlign: "center",
+  },
+  // A long value like "Breakfast" shrinks to fit, and would reach the card's
+  // rounded edges without room on the sides
+  viewPropertyValue: {
+    paddingVertical: 0,
+    paddingHorizontal: 8,
   },
   placeholder: {
     color: "#8c8c8c",

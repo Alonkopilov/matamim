@@ -1,4 +1,4 @@
-import { FlexStyle, I18nManager, TextStyle } from "react-native";
+import { I18nManager, TextStyle, ViewStyle } from "react-native";
 
 // The layout mirrors between Hebrew and English: rows, "left"/"right" styles
 // and text alignment all follow the direction. These are for the few places
@@ -13,18 +13,18 @@ export const INPUT_START_ALIGN: TextStyle["textAlign"] = I18nManager.isRTL
 // them, whatever the language, so they don't jump sides on a language switch.
 
 // Lays children out from right to left in both directions
-export const RIGHT_TO_LEFT_ROW: FlexStyle["flexDirection"] = I18nManager.isRTL
+export const RIGHT_TO_LEFT_ROW: ViewStyle["flexDirection"] = I18nManager.isRTL
   ? "row"
   : "row-reverse";
 
 // RTL swaps "left" and "right", these always mean the side of the screen
-export const onScreenLeft = (offset: number): FlexStyle =>
+export const onScreenLeft = (offset: number): ViewStyle =>
   I18nManager.isRTL ? { right: offset } : { left: offset };
 
-export const onScreenRight = (offset: number): FlexStyle =>
+export const onScreenRight = (offset: number): ViewStyle =>
   I18nManager.isRTL ? { left: offset } : { right: offset };
 
 // alignSelf for the screen's left edge of a column
-export const SCREEN_LEFT_SELF: FlexStyle["alignSelf"] = I18nManager.isRTL
+export const SCREEN_LEFT_SELF: ViewStyle["alignSelf"] = I18nManager.isRTL
   ? "flex-end"
   : "flex-start";

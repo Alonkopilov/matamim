@@ -229,7 +229,7 @@ existing ones.
 
 All emails are `@e2e.test`. Shared recipes of a host set `team_id` like
 Shared Stew does. Upload sharehost@'s magenta photo in `seed.sh` (see how
-`seed-magenta.jpg` is uploaded for other users). Every premium account that
+`e2ef0700-0000-0000-0000-000000000001.jpg` is uploaded for other users). Every premium account that
 **logs in on the device** runs `revenuecat-grant.js` at the start of its
 flow, as the premium flows do.
 

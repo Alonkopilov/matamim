@@ -1,4 +1,4 @@
-import { FlexStyle, I18nManager, TextStyle } from "react-native";
+import { I18nManager, TextStyle, ViewStyle } from "react-native";
 
 // Letters that have a direction. The first one decides a text's direction,
 // the way the platforms pick the direction of a paragraph.
@@ -46,13 +46,13 @@ export const contentDirection = (text: string | undefined): TextStyle =>
   directionStyle(text && STRONG_CHAR.test(text) ? isRTLText(text) : null);
 
 /** Moves a narrower block to the side content in that direction starts on */
-export const contentStartSelf = (isRTL: boolean | null): FlexStyle =>
+export const contentStartSelf = (isRTL: boolean | null): ViewStyle =>
   isRTL === null || isRTL === I18nManager.isRTL
     ? {}
     : { alignSelf: "flex-end" };
 
 /** A row that starts on the side content in that direction starts on */
-export const contentRow = (isRTL: boolean | null): FlexStyle => ({
+export const contentRow = (isRTL: boolean | null): ViewStyle => ({
   flexDirection:
     isRTL === null || isRTL === I18nManager.isRTL ? "row" : "row-reverse",
 });

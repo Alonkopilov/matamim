@@ -73,16 +73,18 @@ tags:
     text: "Premium"
     selected: true
 
-# 7. Legal pages open in the browser, on matamim.org. The page titles
-#    (with " – Matamim") and headings exist only on the web pages.
+# 7. Legal pages open in the browser, on matamim.org. "Last updated" and
+#    the section headings exist only on the web pages. Chrome 156's tab
+#    shows only the address, not the page title.
 - tapOn: "Terms of Use"
 - runFlow: ../../subflows/dismiss-chrome-first-run.yaml
 - extendedWaitUntil:
-    visible: "Terms of Use – Matamim"
+    visible: "Last updated: .*"
     timeout: 20000
 - assertVisible:
     id: "com.android.chrome:id/url_bar"
     text: "matamim.org"
+- assertVisible: "Terms of Use"
 - assertVisible: "Your account"
 # Back is sometimes swallowed by Chrome, the tab's close button isn't
 - tapOn:
@@ -93,7 +95,7 @@ tags:
 - tapOn: "Privacy Policy"
 - runFlow: ../../subflows/dismiss-chrome-first-run.yaml
 - extendedWaitUntil:
-    visible: "Privacy Policy – Matamim"
+    visible: "Last updated: .*"
     timeout: 20000
 - assertVisible:
     id: "com.android.chrome:id/url_bar"
