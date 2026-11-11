@@ -1,4 +1,5 @@
 import PressableScale from "@/components/ui/PressableScale";
+import { Text } from "@/components/ui/Text";
 import { colors, fonts, radius, spacing } from "@/constants/theme";
 import { difficultyLabel } from "@/i18n/recipeLabels";
 import { getCurrentUserId, useAccessToken } from "@/stores/authStore";
@@ -25,7 +26,6 @@ import {
   RefreshControl,
   type StyleProp,
   StyleSheet,
-  Text,
   View,
   type ViewStyle,
 } from "react-native";

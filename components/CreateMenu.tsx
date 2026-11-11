@@ -1,11 +1,12 @@
 import PressableScale from "@/components/ui/PressableScale";
 import Sheet, { type SheetHandle, sheetStyles } from "@/components/ui/Sheet";
+import { Text } from "@/components/ui/Text";
 import { colors, fonts, radius, spacing } from "@/constants/theme";
 import { pendingShare$ } from "@/stores/shareStore";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { type ComponentProps, useRef } from "react";
 import { useTranslation } from "react-i18next";
-import { StyleSheet, Text, View } from "react-native";
+import { StyleSheet, View } from "react-native";
 
 type IconName = ComponentProps<typeof MaterialCommunityIcons>["name"];
 type Choice = "new" | "link" | "photo";

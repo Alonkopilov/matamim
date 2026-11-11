@@ -1,3 +1,4 @@
+import { MAX_FONT_SCALE, Text, TextInput } from "@/components/ui/Text";
 import { colors, fonts, spacing } from "@/constants/theme";
 import Ingredient from "@/components/Ingredient";
 import Instruction from "@/components/Instruction";
@@ -77,8 +78,6 @@ import {
   Platform,
   Pressable,
   StyleSheet,
-  Text,
-  TextInput,
   type TextInputInstance,
   View,
   type ViewInstance,
@@ -736,6 +735,7 @@ export default observer(function RecipeCard() {
               </Computed>
             ) : (
               <$Text
+                maxFontSizeMultiplier={MAX_FONT_SCALE}
                 style={[
                   styles.name,
                   { paddingBottom: 7 },
@@ -764,6 +764,7 @@ export default observer(function RecipeCard() {
               </Computed>
             ) : (
               <$Text
+                maxFontSizeMultiplier={MAX_FONT_SCALE}
                 style={[
                   styles.description,
                   contentDirection(ui$.recipe.description.get()),

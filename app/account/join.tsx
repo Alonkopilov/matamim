@@ -1,3 +1,4 @@
+import { MAX_FONT_SCALE, Text } from "@/components/ui/Text";
 import { colors } from "@/constants/theme";
 import { settings$ } from "@/stores/settingsStore";
 import { logger } from "@/utils/logger";
@@ -16,7 +17,6 @@ import {
   Pressable,
   ScrollView,
   StyleSheet,
-  Text,
   View,
 } from "react-native";
 
@@ -135,6 +135,7 @@ export default function TeamScreen() {
             <View key={group[0]} style={styles.codeGroup}>
               {group.map((i) => (
                 <$Text
+                  maxFontSizeMultiplier={MAX_FONT_SCALE}
                   key={i}
                   $style={() =>
                     ui$.code[i].get() ? styles.digit : styles.emptyDigit

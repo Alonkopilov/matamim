@@ -1,4 +1,5 @@
 import { useBottomTabBarHeight } from "expo-router/js-tabs";
+import { MAX_FONT_SCALE } from "@/components/ui/Text";
 import { colors } from "@/constants/theme";
 import { updateNameSchema } from "@/schemas/registerSchema";
 import { showAlert } from "@/stores/alertStore";
@@ -248,8 +249,12 @@ export default function ConnectedView({ account, mode }: Props) {
             color={colors.textDisabled}
           />
         </View>
-        <$Text style={styles.name}>{() => currentUserName()}</$Text>
-        <$Text style={styles.email}>{() => account.email.get() || ""}</$Text>
+        <$Text style={styles.name} maxFontSizeMultiplier={MAX_FONT_SCALE}>
+          {() => currentUserName()}
+        </$Text>
+        <$Text style={styles.email} maxFontSizeMultiplier={MAX_FONT_SCALE}>
+          {() => account.email.get() || ""}
+        </$Text>
 
         <SettingsGroup title={t("account.sections.settings")}>
           <MenuSettingsItem

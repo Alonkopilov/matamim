@@ -1,5 +1,6 @@
 import Button from "@/components/ui/Button";
 import PressableScale from "@/components/ui/PressableScale";
+import { MAX_FONT_SCALE, Text } from "@/components/ui/Text";
 import { colors, fonts, radius, spacing } from "@/constants/theme";
 import { directionStyle } from "@/utils/textDirection";
 import FontAwesome6 from "@expo/vector-icons/FontAwesome6";
@@ -7,7 +8,7 @@ import * as Haptics from "expo-haptics";
 import { activateKeepAwakeAsync, deactivateKeepAwake } from "expo-keep-awake";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Modal, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Modal, ScrollView, StyleSheet, View } from "react-native";
 import Animated, { FadeIn } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -108,6 +109,7 @@ export default function CookMode({
           showsVerticalScrollIndicator={false}
         >
           <Animated.Text
+            maxFontSizeMultiplier={MAX_FONT_SCALE}
             key={index}
             entering={FadeIn.duration(250)}
             style={[styles.step, directionStyle(isContentRTL)]}

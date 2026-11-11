@@ -1,6 +1,7 @@
+import { Text } from "@/components/ui/Text";
 import { colors, fonts, spacing } from "@/constants/theme";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
-import { I18nManager, Pressable, StyleSheet, Text } from "react-native";
+import { I18nManager, Pressable, StyleSheet } from "react-native";
 import IconTile, { type IconName, ROW_PADDING } from "./IconTile";
 
 type Props = {

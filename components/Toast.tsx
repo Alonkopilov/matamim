@@ -1,9 +1,10 @@
+import { Text } from "@/components/ui/Text";
 import { colors, fonts, shadows, spacing } from "@/constants/theme";
 import { toast$ } from "@/stores/toastStore";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { observer } from "@legendapp/state/react";
 import { type ComponentProps, useEffect } from "react";
-import { StyleSheet, Text } from "react-native";
+import { StyleSheet } from "react-native";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import Animated, {
   useAnimatedStyle,

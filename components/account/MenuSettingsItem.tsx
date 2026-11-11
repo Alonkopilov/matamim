@@ -1,9 +1,10 @@
+import { Text } from "@/components/ui/Text";
 import { colors, fonts, spacing } from "@/constants/theme";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { Observable } from "@legendapp/state";
 import { Computed } from "@legendapp/state/react";
 import { useTranslation } from "react-i18next";
-import { StyleSheet, Switch, Text, View } from "react-native";
+import { StyleSheet, Switch, View } from "react-native";
 import IconTile, { type IconName, ROW_PADDING } from "./IconTile";
 
 type Props = {

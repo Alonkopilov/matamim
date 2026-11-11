@@ -1,3 +1,4 @@
+import { MAX_FONT_SCALE, Text } from "@/components/ui/Text";
 import { colors, fonts, spacing } from "@/constants/theme";
 import Category from "@/components/Category";
 import LanguageButton from "@/components/LanguageButton";
@@ -30,7 +31,7 @@ import { $Text } from "@legendapp/state/react-native";
 import { FlashListRef } from "@shopify/flash-list";
 import { useEffect, useRef } from "react";
 import { Trans, useTranslation } from "react-i18next";
-import { ScrollView, StyleSheet, Text, View } from "react-native";
+import { ScrollView, StyleSheet, View } from "react-native";
 import Animated, {
   Extrapolation,
   interpolate,
@@ -183,7 +184,11 @@ export default function Index() {
           style={[StyleSheet.absoluteFill, styles.barBackground, compactStyle]}
         />
         <Animated.View style={[styles.barTitleWrap, compactStyle]}>
-          <$Text style={styles.barTitle} numberOfLines={1}>
+          <$Text
+            style={styles.barTitle}
+            numberOfLines={1}
+            maxFontSizeMultiplier={MAX_FONT_SCALE}
+          >
             {() =>
               t("home.welcome", {
                 name: currentUserName(),
@@ -218,7 +223,10 @@ function HomeListHeader({ scrollY, query$, category$, onSelect }: HeaderProps) {
   return (
     <View style={styles.flashListHeader}>
       <Animated.View style={largeTitleStyle}>
-        <$Text style={styles.welcomeMsg}>
+        <$Text
+          style={styles.welcomeMsg}
+          maxFontSizeMultiplier={MAX_FONT_SCALE}
+        >
           {() =>
             t("home.welcome", {
               name: currentUserName(),

@@ -1,3 +1,4 @@
+import { Text } from "@/components/ui/Text";
 import { colors } from "@/constants/theme";
 import { AlertModal } from "@/components/AlertModal";
 import i18n from "@/i18n";
@@ -29,7 +30,7 @@ import { ShareIntentProvider } from "expo-share-intent";
 import * as SplashScreen from "expo-splash-screen";
 import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet, View } from "react-native";
 
 const SENTRY_DSN = process.env.EXPO_PUBLIC_SENTRY_DSN;
 

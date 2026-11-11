@@ -1,10 +1,10 @@
 import PressableScale from "@/components/ui/PressableScale";
+import { Text } from "@/components/ui/Text";
 import { colors, fonts, spacing } from "@/constants/theme";
 import {
   ActivityIndicator,
   type StyleProp,
   StyleSheet,
-  Text,
   type ViewStyle,
 } from "react-native";
 

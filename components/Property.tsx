@@ -1,3 +1,4 @@
+import { MAX_FONT_SCALE, Text } from "@/components/ui/Text";
 import { colors } from "@/constants/theme";
 import PressableScale from "@/components/ui/PressableScale";
 import FontAwesome6 from "@expo/vector-icons/FontAwesome6";
@@ -15,7 +16,6 @@ import {
   ScrollView,
   type ScrollViewInstance,
   StyleSheet,
-  Text,
   View,
 } from "react-native";
 
@@ -93,6 +93,7 @@ export default function Property({
             </Pressable>
           ) : (
             <$Text
+              maxFontSizeMultiplier={MAX_FONT_SCALE}
               testID={testID && `${testID}-value`}
               style={[styles.propertyValue, styles.viewPropertyValue]}
               numberOfLines={1}

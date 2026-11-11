@@ -1,4 +1,5 @@
 import { useBottomTabBarHeight } from "expo-router/js-tabs";
+import { Text } from "@/components/ui/Text";
 import { colors } from "@/constants/theme";
 import ConnectedView from "@/components/account/ConnectedAccount";
 import FormInput from "@/components/account/FormInput";
@@ -30,7 +31,6 @@ import {
   Pressable,
   ScrollView,
   StyleSheet,
-  Text,
   View,
 } from "react-native";
 

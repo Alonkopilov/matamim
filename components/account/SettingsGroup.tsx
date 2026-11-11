@@ -1,6 +1,7 @@
+import { Text } from "@/components/ui/Text";
 import { colors, fonts, radius, spacing } from "@/constants/theme";
 import { Children, Fragment, type ReactNode } from "react";
-import { StyleSheet, Text, View } from "react-native";
+import { StyleSheet, View } from "react-native";
 import { ICON_TILE_SIZE, ROW_PADDING } from "./IconTile";
 
 type Props = {

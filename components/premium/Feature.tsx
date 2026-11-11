@@ -1,7 +1,8 @@
+import { Text } from "@/components/ui/Text";
 import { colors } from "@/constants/theme";
 import Octicons from "@expo/vector-icons/Octicons";
 import { ComponentProps } from "react";
-import { StyleSheet, Text, View } from "react-native";
+import { StyleSheet, View } from "react-native";
 
 type Props = {
   icon: ComponentProps<typeof Octicons>["name"];

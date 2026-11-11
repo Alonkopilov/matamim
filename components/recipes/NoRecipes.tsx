@@ -1,9 +1,10 @@
+import { Text } from "@/components/ui/Text";
 import { colors } from "@/constants/theme";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { router } from "expo-router";
 import { useTranslation } from "react-i18next";
 import PressableScale from "@/components/ui/PressableScale";
-import { StyleSheet, Text, View } from "react-native";
+import { StyleSheet, View } from "react-native";
 export default function NoRecipes() {
   const { t } = useTranslation();
 
