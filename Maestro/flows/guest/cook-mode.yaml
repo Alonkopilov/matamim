@@ -1,0 +1,195 @@
+# A guest cooks a recipe one step at a time. Besides the buttons, tapping the
+# screen's edges turns the steps, like a story.
+#
+# Checks:
+#   1. In English, the right edge goes to the next step and the left edge to
+#      the previous one
+#   2. The middle of the screen does nothing
+#   3. The ends don't move: back on the first step, forward on the last. Only
+#      Done closes cook mode
+#   4. The Previous, Next and Done buttons still work
+#   5. In Hebrew (right to left) the sides swap: the left edge goes forward
+#      and the right edge back
+appId: com.matamim.app.e2e
+name: Guest - cook mode
+tags:
+  - guest
+---
+- launchApp:
+    clearState: true
+- extendedWaitUntil:
+    visible: "Create my first recipe"
+    timeout: 20000
+
+# A recipe with three steps, its other required fields as in
+# subflows/create-recipe.yaml
+- tapOn: "Create my first recipe"
+- tapOn:
+    id: "recipe-title"
+- inputText: "Tap Omelette"
+- hideKeyboard
+- tapOn:
+    id: "property-prepTime"
+- tapOn: "40"
+- waitForAnimationToEnd
+- tapOn: "OK"
+- tapOn:
+    id: "property-servings"
+- tapOn: "6"
+- waitForAnimationToEnd
+- tapOn: "OK"
+- tapOn:
+    id: "property-meal"
+- tapOn: "Dinner"
+- tapOn:
+    id: "property-difficulty"
+- tapOn: "Medium"
+- scrollUntilVisible:
+    element:
+      id: "add-ingredient"
+- tapOn:
+    id: "add-ingredient"
+- tapOn:
+    id: "ingredient-0-amount"
+- inputText: "4"
+- tapOn:
+    id: "ingredient-0-unit"
+- inputText: "pcs"
+- tapOn:
+    id: "ingredient-0-item"
+- inputText: "Eggs"
+- hideKeyboard
+- scrollUntilVisible:
+    element:
+      id: "add-step"
+- tapOn:
+    id: "add-step"
+- tapOn:
+    id: "step-0"
+- inputText: "Crack the eggs"
+- hideKeyboard
+- scrollUntilVisible:
+    element:
+      id: "add-step"
+- tapOn:
+    id: "add-step"
+- tapOn:
+    id: "step-1"
+- inputText: "Whisk them"
+- hideKeyboard
+- scrollUntilVisible:
+    element:
+      id: "add-step"
+- tapOn:
+    id: "add-step"
+- tapOn:
+    id: "step-2"
+- inputText: "Fry in a pan"
+- hideKeyboard
+- tapOn:
+    id: "create-recipe"
+- extendedWaitUntil:
+    visible: "Tap Omelette"
+    timeout: 10000
+
+- tapOn: "Tap Omelette"
+- tapOn: "Start cooking"
+- extendedWaitUntil:
+    visible: "Step 1 of 3"
+    timeout: 5000
+- assertVisible: "Crack the eggs"
+
+# 3. Back on the first step stays on it
+- tapOn:
+    point: "6%,50%"
+- assertVisible: "Step 1 of 3"
+- assertVisible: "Crack the eggs"
+
+# 1. The right edge goes forward, step by step
+- tapOn:
+    point: "94%,50%"
+- assertVisible: "Step 2 of 3"
+- assertVisible: "Whisk them"
+- assertNotVisible: "Crack the eggs"
+
+# 2. The middle does nothing. On step 2, so a wrong turn either way would show.
+- tapOn:
+    point: "50%,50%"
+- assertVisible: "Step 2 of 3"
+- assertVisible: "Whisk them"
+
+# 1. On to the last step
+- tapOn:
+    point: "94%,50%"
+- assertVisible: "Step 3 of 3"
+- assertVisible: "Fry in a pan"
+
+# 3. Forward on the last step stays on it, and cook mode stays open
+- tapOn:
+    point: "94%,50%"
+- assertVisible: "Step 3 of 3"
+- assertVisible: "Fry in a pan"
+- assertVisible: "Done"
+
+# 1. The left edge goes back
+- tapOn:
+    point: "6%,50%"
+- assertVisible: "Step 2 of 3"
+- assertVisible: "Whisk them"
+
+# 4. The buttons
+- tapOn: "Previous"
+- assertVisible: "Step 1 of 3"
+- tapOn: "Next"
+- assertVisible: "Step 2 of 3"
+- tapOn: "Next"
+- assertVisible: "Step 3 of 3"
+- tapOn: "Done"
+- extendedWaitUntil:
+    notVisible: "Step 3 of 3"
+    timeout: 5000
+- assertVisible: "Start cooking"
+
+# 5. In Hebrew. The app reloads to flip the layout to right to left.
+- back
+- extendedWaitUntil:
+    visible:
+      text: "Recipes"
+      selected: true
+    timeout: 5000
+- tapOn: "Language"
+- tapOn: "עברית"
+# The Hebrew greeting comes before the reload, the launch toast only after it
+- extendedWaitUntil:
+    visible: "היי .*!"
+    timeout: 30000
+- extendedWaitUntil:
+    visible: "Tap Omelette"
+    timeout: 20000
+- tapOn: "Tap Omelette"
+- tapOn: "מתחילים לבשל"
+- extendedWaitUntil:
+    visible: "שלב 1 מתוך 3"
+    timeout: 5000
+# The right edge is back now, so on the first step it stays
+- tapOn:
+    point: "94%,50%"
+- assertVisible: "שלב 1 מתוך 3"
+- assertVisible: "Crack the eggs"
+# The left edge goes forward
+- tapOn:
+    point: "6%,50%"
+- assertVisible: "שלב 2 מתוך 3"
+- assertVisible: "Whisk them"
+- tapOn:
+    point: "6%,50%"
+- assertVisible: "שלב 3 מתוך 3"
+# The right edge goes back
+- tapOn:
+    point: "94%,50%"
+- assertVisible: "שלב 2 מתוך 3"
+- assertVisible: "Whisk them"
+- tapOn: "סגירה"
+- extendedWaitUntil:
+    notVisible: "שלב 2 מתוך 3"
+    timeout: 5000
