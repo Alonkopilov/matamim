@@ -43,9 +43,9 @@
     "failedTitle": "Purchase failed"
   },
   "loginRequired": {
-    "title": "Login required",
-    "message": "Please log in to your account to buy Premium.",
-    "login": "Log in"
+    "title": "Account required",
+    "message": "Sign up or log in to buy Premium.",
+    "login": "Go to account"
   },
   "restore": {
     "button": "Restore purchase",

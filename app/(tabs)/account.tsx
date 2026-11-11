@@ -11,7 +11,7 @@ import {
   resetPasswordSchema,
 } from "@/schemas/resetPasswordSchema";
 import { auth$ } from "@/stores/authStore";
-import { settings$ } from "@/stores/settingsStore";
+import { loggedOutAccountMode, settings$ } from "@/stores/settingsStore";
 import { showToast } from "@/stores/toastStore";
 import {
   Account,
@@ -37,7 +37,7 @@ import {
 export default observer(function AccountScreen() {
   const tabBarHeight = useBottomTabBarHeight();
   const ui$ = useObservable({
-    mode: "login" as AccountMode,
+    mode: loggedOutAccountMode() as AccountMode,
     account: EMPTY_ACCOUNT() as Account,
     problemFields: PERFECT_ACCOUNT() as AccountValidity,
     problems: "",

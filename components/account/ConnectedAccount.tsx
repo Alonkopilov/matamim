@@ -7,7 +7,7 @@ import { refreshSession } from "@/stores/authStore";
 import { premium$ } from "@/stores/premiumStore";
 import { currentUserName, refreshProfile } from "@/stores/profileStore";
 import { countUnsyncedRecipes, getOwnRecipes } from "@/stores/recipeStore";
-import { settings$ } from "@/stores/settingsStore";
+import { loggedOutAccountMode, settings$ } from "@/stores/settingsStore";
 import { team$ } from "@/stores/teamStore";
 import { showToast } from "@/stores/toastStore";
 import { Account, AccountMode, EMPTY_ACCOUNT } from "@/types/account";
@@ -101,6 +101,8 @@ export default function ConnectedView({ account, mode }: Props) {
                 }),
               );
             } else {
+              // Opens on sign up again, there's no account to log in to
+              settings$.hasSignedIn.set(false);
               await logout({
                 titleKey: "account.deleteAccount.successTitle",
                 messageKey: "account.deleteAccount.successMessage",
@@ -207,7 +209,7 @@ export default function ConnectedView({ account, mode }: Props) {
     account.set(EMPTY_ACCOUNT());
     settings$.isCollaborativeTeam.set(false);
     setIsLoading(false);
-    mode.set("login");
+    mode.set(loggedOutAccountMode());
   };
 
   if (isLoading)

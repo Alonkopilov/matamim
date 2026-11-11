@@ -1,11 +1,24 @@
 # Logs in to a seeded account (supabase/e2e/seed.sql) from the Account tab's
 # login form. Setup for flows that start logged in, logging in itself is
 # tested in flows/account/login.yaml. Lands on the Account tab.
+# The tab opens on sign up until an account was signed in on the device, then
+# on log in, so it switches to log in only when needed.
 #
 # env: EMAIL, NAME (the account's name, greeted by "Welcome back")
 appId: com.matamim.app.e2e
 ---
 - tapOn: "Account"
+# Either form, before checking which one it is
+- extendedWaitUntil:
+    visible:
+      id: "account-submit"
+    timeout: 5000
+- runFlow:
+    when:
+      visible: "Log in here"
+    commands:
+      - tapOn: "Log in here"
+- assertVisible: "Forgot your password\\?"
 - runFlow:
     file: replace-text.yaml
     env:

@@ -5,7 +5,8 @@
 #   2. There is no logged-in user and no stored recipes: the guest greeting
 #      and the empty cookbook are shown
 #   3. The team tab is locked: tapping it shows a toast and doesn't open it
-#   4. The account tab shows the login form
+#   4. The account tab shows the sign up form, no account was ever signed in
+#      on this device
 appId: com.matamim.app.e2e
 name: Guest - first launch
 tags:
@@ -17,7 +18,7 @@ tags:
     clearState: true
 
 # 2. The greeting toast is timed, so it's caught first. A guest has no name,
-#    the login form in step 4 proves there's no session.
+#    the sign up form in step 4 proves there's no session.
 - extendedWaitUntil:
     visible: "Hi Anonymous Chef!"
     timeout: 20000
@@ -45,13 +46,16 @@ tags:
     selected: false
 - assertVisible: "Your cookbook is empty, but the kitchen is waiting 🍗"
 
-# 4. Account shows the login form, not a connected account
+# 4. Account shows the sign up form, not the login form or a connected account
 - tapOn: "Account"
 - assertVisible:
     text: "Account"
     selected: true
 - assertVisible: "Want to keep your recipes safe\\?(?s).*"
+- assertVisible: "Full name"
 - assertVisible: "Email"
-- assertVisible: "Password"
-- assertVisible: "Log in"
-- assertVisible: "Want to create an account\\?"
+- assertVisible: "Create a password"
+- assertVisible: "Confirm password"
+- assertVisible: "Sign up"
+- assertVisible: "Already have an account\\?"
+- assertNotVisible: "Forgot your password\\?"

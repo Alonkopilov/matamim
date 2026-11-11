@@ -10,15 +10,15 @@
 #
 # Checks:
 #   1. Deleting asks first, and Cancel deletes nothing
-#   2. Confirmed: logged out, a guest's empty recipes screen, the login form
-#      on the Account tab, and no recipes left in the app's storage, the
-#      team's included
+#   2. Confirmed: logged out, a guest's empty recipes screen, the sign up
+#      form on the Account tab (not log in, there's no account to log in to),
+#      and no recipes left in the app's storage, the team's included
 #   3. On the server, none of delete@'s rows are left in any table that
 #      references a user (Auth's included), nor its photo. The probe also fails the check if a
 #      table references users without being counted.
 #   4. keeper@ keeps every row, its team included
 #   5. Logging in as delete@ is refused. After a relaunch, still a guest
-#      with nothing stored.
+#      with nothing stored, and the Account tab still opens on sign up.
 #
 # Deleting logs out, and a free account's recipe waits in the upload queue,
 # so the app restarts (like logging out, see local-recipes.yaml). The "Your
@@ -137,6 +137,9 @@ tags:
 - tapOn: "Account"
 - assertVisible:
     id: "account-submit"
+- assertVisible:
+    id: "account-fullName"
+- assertNotVisible: "Forgot your password\\?"
 - assertNotVisible: "delete@e2e\\.test"
 - runScript: ../../scripts/probe-device-recipes.js
 - assertTrue:
@@ -185,4 +188,4 @@ tags:
     label: "After a relaunch, still nothing on the device"
 - tapOn: "Account"
 - assertVisible:
-    id: "account-submit"
+    id: "account-fullName"

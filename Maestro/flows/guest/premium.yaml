@@ -3,8 +3,9 @@
 #
 # Checks:
 #   5. The plans load, with the yearly "Best value" plan selected
-#   6. Purchase and restore need an account: both show "Login required"
-#      and nothing else happens. Its "Log in" button opens the login form.
+#   6. Purchase and restore need an account: both show "Account required"
+#      and nothing else happens. Its "Go to account" button opens the sign up
+#      form.
 #   7. Terms of Use and Privacy Policy open the real pages
 appId: com.matamim.app.e2e
 name: Guest - premium screen
@@ -53,10 +54,10 @@ tags:
 - scrollUntilVisible:
     element: "Purchase"
 - tapOn: "Purchase"
-- assertVisible: "Login required"
-- assertVisible: "Please log in to your account to buy Premium."
+- assertVisible: "Account required"
+- assertVisible: "Sign up or log in to buy Premium."
 - tapOn: "Cancel"
-- assertNotVisible: "Login required"
+- assertNotVisible: "Account required"
 - assertVisible:
     text: "Premium"
     selected: true
@@ -66,9 +67,9 @@ tags:
 - scrollUntilVisible:
     element: "Restore purchase"
 - tapOn: "Restore purchase"
-- assertVisible: "Login required"
+- assertVisible: "Account required"
 - tapOn: "Cancel"
-- assertNotVisible: "Login required"
+- assertNotVisible: "Account required"
 - assertVisible:
     text: "Premium"
     selected: true
@@ -117,14 +118,16 @@ tags:
 - assertNotVisible: "No previous purchase found"
 - assertNotVisible: "Couldn't restore your purchase"
 
-# 6c. "Log in" in the sheet takes the guest to the login form
+# 6c. "Go to account" in the sheet takes the guest to the sign up form, no
+# account was ever signed in on this device
 - tapOn: "Purchase"
-- assertVisible: "Login required"
+- assertVisible: "Account required"
 - tapOn:
-    text: "Log in"
-- assertNotVisible: "Login required"
+    text: "Go to account"
+- assertNotVisible: "Account required"
 - assertVisible:
     text: "Account"
     selected: true
-- assertVisible: "Email"
-- assertVisible: "Password"
+- assertVisible:
+    id: "account-fullName"
+- assertVisible: "Already have an account\\?"

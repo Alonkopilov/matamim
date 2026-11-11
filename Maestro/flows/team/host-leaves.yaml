@@ -19,7 +19,8 @@
 #      recipes, on screen or on the server
 #   3. delhost@ deletes its account: it is gone, Heir Team now belongs to
 #      heir@ (the oldest premium member), lateheir@ is still a member and
-#      heir@ is no longer in team_members
+#      heir@ is no longer in team_members. Its Account tab is on the sign up
+#      form, not log in
 appId: com.matamim.app.e2e
 name: Team - the host leaves
 tags:
@@ -243,8 +244,11 @@ tags:
 - extendedWaitUntil:
     visible: "Your account was deleted"
     timeout: 30000
+# On sign up, there's no account to log in to. Without a restart, so the
+# screen sets the form itself instead of reading it on launch.
 - assertVisible:
-    id: "account-submit"
+    id: "account-fullName"
+- assertNotVisible: "Forgot your password\\?"
 # Shown once: dismissed, it doesn't come back
 - tapOn: "Got it"
 - waitForAnimationToEnd:
