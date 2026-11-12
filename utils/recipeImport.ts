@@ -4,6 +4,7 @@ import { Ingredient, Instruction, Recipe } from "@/types/recipe";
 import { File, Paths } from "expo-file-system";
 import { ImageManipulator, SaveFormat } from "expo-image-manipulator";
 import { logger } from "./logger";
+import { newItemId } from "./recipeItems";
 import { toServerError } from "./serverErrors";
 import { supabase } from "./supabase";
 
@@ -22,8 +23,6 @@ type ImportedRecipe = Pick<
   ingredients: Omit<Ingredient, "id">[];
   instructions: Omit<Instruction, "id">[];
 };
-
-const newId = () => Math.random().toString(36).substring(7);
 
 export type ImportedFields = Omit<
   Recipe,
@@ -142,11 +141,11 @@ async function runImport(
     tags: recipe.tags ?? [],
     ingredients: recipe.ingredients.map((ingredient) => ({
       ...ingredient,
-      id: newId(),
+      id: newItemId(),
     })),
     instructions: recipe.instructions.map((instruction) => ({
       ...instruction,
-      id: newId(),
+      id: newItemId(),
     })),
   };
 }

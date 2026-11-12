@@ -40,7 +40,7 @@ tags:
     id: "ai-import"
 - assertNotVisible: "What are we making\\?"
 - assertNotVisible: "Some recipe details are missing"
-- assertNotVisible: "Log in to try importing"
+- assertNotVisible: "Sign up to try importing"
 - assertNotVisible: "Import a recipe"
 
 # 2. Every required field is checked. Create is tapped with everything empty,

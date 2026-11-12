@@ -1,10 +1,11 @@
 import Button from "@/components/ui/Button";
 import Sheet, { type SheetHandle, sheetStyles } from "@/components/ui/Sheet";
+import { Text } from "@/components/ui/Text";
 import { spacing } from "@/constants/theme";
 import { AlertButton, alerts$, dismissAlert } from "@/stores/alertStore";
 import { observer } from "@legendapp/state/react";
 import { useRef } from "react";
-import { StyleSheet, Text, View } from "react-native";
+import { StyleSheet, View } from "react-native";
 
 const VARIANTS = {
   default: "primary",

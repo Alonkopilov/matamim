@@ -1,3 +1,4 @@
+import { MAX_FONT_SCALE, Text } from "@/components/ui/Text";
 import { colors } from "@/constants/theme";
 import { updateMailSchema } from "@/schemas/registerSchema";
 import {
@@ -12,13 +13,7 @@ import { useTranslation } from "react-i18next";
 import Button from "@/components/ui/Button";
 import Sheet, { type SheetHandle, sheetStyles } from "@/components/ui/Sheet";
 import { BottomSheetTextInput } from "@gorhom/bottom-sheet";
-import {
-  Pressable,
-  StyleSheet,
-  Text,
-  TextInputProps,
-  View,
-} from "react-native";
+import { Pressable, StyleSheet, TextInputProps, View } from "react-native";
 import { ZodType } from "zod";
 
 type Props = {
@@ -199,6 +194,7 @@ export default function VerifiedChangeModal({
     props?: TextInputProps,
   ) => (
     <BottomSheetTextInput
+      maxFontSizeMultiplier={MAX_FONT_SCALE}
       testID={testID}
       style={[sheetStyles.input, error ? sheetStyles.inputError : null]}
       placeholder={placeholder}

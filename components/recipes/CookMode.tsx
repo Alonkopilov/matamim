@@ -1,18 +1,31 @@
 import Button from "@/components/ui/Button";
 import PressableScale from "@/components/ui/PressableScale";
+import { MAX_FONT_SCALE, Text } from "@/components/ui/Text";
 import { colors, fonts, radius, spacing } from "@/constants/theme";
 import { directionStyle } from "@/utils/textDirection";
 import FontAwesome6 from "@expo/vector-icons/FontAwesome6";
 import * as Haptics from "expo-haptics";
 import { activateKeepAwakeAsync, deactivateKeepAwake } from "expo-keep-awake";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Modal, ScrollView, StyleSheet, Text, View } from "react-native";
+import {
+  type GestureResponderEvent,
+  I18nManager,
+  Modal,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  useWindowDimensions,
+  View,
+} from "react-native";
 import Animated, { FadeIn } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 // Its own tag, so the recipe screen's setting doesn't turn it off
 const KEEP_AWAKE_TAG = "cook-mode";
+
+// A finger that moved further than this was dragging, not tapping
+const TAP_SLOP = 10;
 
 type Props = {
   visible: boolean;
@@ -31,7 +44,9 @@ export default function CookMode({
 }: Props) {
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
+  const { width } = useWindowDimensions();
   const [index, setIndex] = useState(0);
+  const pressStart = useRef({ x: 0, y: 0 });
 
   useEffect(() => {
     if (!visible) return;
@@ -51,6 +66,24 @@ export default function CookMode({
   const goTo = (next: number) => {
     Haptics.selectionAsync();
     setIndex(next);
+  };
+
+  // Like a story: the screen's outer thirds turn the page, forward on the side
+  // the Next button is on. The middle is left for resting a finger, and the
+  // last step only closes with Done.
+  const onTapStep = ({ nativeEvent }: GestureResponderEvent) => {
+    // A short step can't scroll, so on Android a drag isn't taken from the tap
+    const moved = Math.hypot(
+      nativeEvent.pageX - pressStart.current.x,
+      nativeEvent.pageY - pressStart.current.y,
+    );
+    if (moved > TAP_SLOP) return;
+    const isOnLeft = nativeEvent.pageX < width / 3;
+    const isOnRight = nativeEvent.pageX > (width * 2) / 3;
+    if (!isOnLeft && !isOnRight) return;
+    const isForward = I18nManager.isRTL ? isOnLeft : isOnRight;
+    if (isForward && !isLast) goTo(index + 1);
+    else if (!isForward && index > 0) goTo(index - 1);
   };
 
   return (
@@ -107,13 +140,30 @@ export default function CookMode({
           contentContainerStyle={styles.bodyContent}
           showsVerticalScrollIndicator={false}
         >
-          <Animated.Text
-            key={index}
-            entering={FadeIn.duration(250)}
-            style={[styles.step, directionStyle(isContentRTL)]}
+          {/* Screen readers use the buttons, the text is read as it is.
+              Without focusable={false} Android still offers it as a button. */}
+          <Pressable
+            testID="cook-mode-step"
+            onPressIn={({ nativeEvent }) => {
+              pressStart.current = {
+                x: nativeEvent.pageX,
+                y: nativeEvent.pageY,
+              };
+            }}
+            onPress={onTapStep}
+            accessible={false}
+            focusable={false}
+            style={styles.stepArea}
           >
-            {steps[index]}
-          </Animated.Text>
+            <Animated.Text
+              maxFontSizeMultiplier={MAX_FONT_SCALE}
+              key={index}
+              entering={FadeIn.duration(250)}
+              style={[styles.step, directionStyle(isContentRTL)]}
+            >
+              {steps[index]}
+            </Animated.Text>
+          </Pressable>
         </ScrollView>
 
         <View style={styles.actions}>
@@ -177,13 +227,20 @@ const styles = StyleSheet.create({
     height: 4,
     borderRadius: radius.full,
   },
+  // Out to the screen's edges, where a story is tapped
   body: {
     flex: 1,
+    marginHorizontal: -spacing.xl,
   },
   bodyContent: {
     flexGrow: 1,
+  },
+  // Fills the body, so a tap anywhere around a short step counts
+  stepArea: {
+    flexGrow: 1,
     justifyContent: "center",
     paddingVertical: spacing.xxl,
+    paddingHorizontal: spacing.xl,
   },
   step: {
     fontFamily: fonts.bold,

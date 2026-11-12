@@ -1,7 +1,8 @@
+import { Text } from "@/components/ui/Text";
 import { colors, fonts, spacing } from "@/constants/theme";
 import * as Haptics from "expo-haptics";
 import { useEffect, useState } from "react";
-import { I18nManager, Pressable, StyleSheet, Text, View } from "react-native";
+import { I18nManager, Pressable, StyleSheet, View } from "react-native";
 import Animated, {
   useAnimatedStyle,
   useSharedValue,

@@ -1,9 +1,10 @@
 import PressableScale from "@/components/ui/PressableScale";
+import { Text } from "@/components/ui/Text";
 import { colors, fonts, radius, spacing } from "@/constants/theme";
 import { Observable } from "@legendapp/state";
 import { observer } from "@legendapp/state/react";
 import * as Haptics from "expo-haptics";
-import { StyleSheet, Text, View } from "react-native";
+import { StyleSheet, View } from "react-native";
 
 type Props = {
   id: string;

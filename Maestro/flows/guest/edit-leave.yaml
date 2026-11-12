@@ -11,7 +11,7 @@
 #      editing with the change. Discard opens B, and A kept its saved title
 #   2. The create menu's "New recipe" asks, and Discard opens the empty form
 #   3. The create menu's link import asks, and it's a pending import: Keep
-#      editing drops it, so the next new recipe opens without the "log in"
+#      editing drops it, so the next new recipe opens without the "sign up"
 #      alert, and Discard goes on to it
 #   4. With no changes there is nothing to ask: B opens at once
 #   5. A photo picked during the edit is removed from the device by Discard
@@ -154,7 +154,7 @@ tags:
     id: "save-recipe"
 - waitForAnimationToEnd:
     timeout: 3000
-- assertNotVisible: "Log in to try importing"
+- assertNotVisible: "Sign up to try importing"
 # Leaving for real, then a plain new recipe: the import was dropped, so it
 # isn't offered now
 - tapOn: "Back"
@@ -172,7 +172,7 @@ tags:
 # Settled, so an import alert that wasn't dropped would be up by now
 - waitForAnimationToEnd:
     timeout: 3000
-- assertNotVisible: "Log in to try importing"
+- assertNotVisible: "Sign up to try importing"
 - tapOn: "Back"
 
 # 3b. The same, and Discard: the import goes on, as a guest it needs an account
@@ -190,11 +190,11 @@ tags:
 - assertVisible: "Discard changes\\?"
 - tapOn:
     id: "alert-destructive"
-- assertVisible: "Log in to try importing"
+- assertVisible: "Sign up to try importing"
 - assertVisible:
     id: "create-recipe"
 - tapOn: "Cancel"
-- assertNotVisible: "Log in to try importing"
+- assertNotVisible: "Sign up to try importing"
 - tapOn: "Back"
 - assertVisible:
     text: "Recipes"

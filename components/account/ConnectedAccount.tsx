@@ -1,4 +1,5 @@
 import { useBottomTabBarHeight } from "expo-router/js-tabs";
+import { MAX_FONT_SCALE } from "@/components/ui/Text";
 import { colors } from "@/constants/theme";
 import { updateNameSchema } from "@/schemas/registerSchema";
 import { showAlert } from "@/stores/alertStore";
@@ -6,7 +7,7 @@ import { refreshSession } from "@/stores/authStore";
 import { premium$ } from "@/stores/premiumStore";
 import { currentUserName, refreshProfile } from "@/stores/profileStore";
 import { countUnsyncedRecipes, getOwnRecipes } from "@/stores/recipeStore";
-import { settings$ } from "@/stores/settingsStore";
+import { loggedOutAccountMode, settings$ } from "@/stores/settingsStore";
 import { team$ } from "@/stores/teamStore";
 import { showToast } from "@/stores/toastStore";
 import { Account, AccountMode, EMPTY_ACCOUNT } from "@/types/account";
@@ -100,6 +101,8 @@ export default function ConnectedView({ account, mode }: Props) {
                 }),
               );
             } else {
+              // Opens on sign up again, there's no account to log in to
+              settings$.hasSignedIn.set(false);
               await logout({
                 titleKey: "account.deleteAccount.successTitle",
                 messageKey: "account.deleteAccount.successMessage",
@@ -206,7 +209,7 @@ export default function ConnectedView({ account, mode }: Props) {
     account.set(EMPTY_ACCOUNT());
     settings$.isCollaborativeTeam.set(false);
     setIsLoading(false);
-    mode.set("login");
+    mode.set(loggedOutAccountMode());
   };
 
   if (isLoading)
@@ -248,8 +251,12 @@ export default function ConnectedView({ account, mode }: Props) {
             color={colors.textDisabled}
           />
         </View>
-        <$Text style={styles.name}>{() => currentUserName()}</$Text>
-        <$Text style={styles.email}>{() => account.email.get() || ""}</$Text>
+        <$Text style={styles.name} maxFontSizeMultiplier={MAX_FONT_SCALE}>
+          {() => currentUserName()}
+        </$Text>
+        <$Text style={styles.email} maxFontSizeMultiplier={MAX_FONT_SCALE}>
+          {() => account.email.get() || ""}
+        </$Text>
 
         <SettingsGroup title={t("account.sections.settings")}>
           <MenuSettingsItem

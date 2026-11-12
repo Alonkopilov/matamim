@@ -59,7 +59,7 @@ tags:
 - extendedWaitUntil:
     visible: "Test Store Purchase"
     timeout: 15000
-- assertNotVisible: "Login required"
+- assertNotVisible: "Account required"
 
 # 2. A failed purchase
 - tapOn: "(?i)test failed purchase"
@@ -145,7 +145,7 @@ tags:
 - tapOn: "Premium"
 - scrollUntilVisible:
     element: "Your subscription is active"
-- assertNotVisible: "Login required"
+- assertNotVisible: "Account required"
 # The app knows it's premium: cloud sync turned off and on again, without the
 # Premium dialog. (A non-premium app also turns the stored setting off on its
 # own once it knows.)

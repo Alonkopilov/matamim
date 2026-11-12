@@ -1,3 +1,4 @@
+import { Text, TextInput } from "@/components/ui/Text";
 import { IngredientRowRefs, type Ingredient } from "@/types/recipe";
 import { contentRow, directionStyle } from "@/utils/textDirection";
 import { INPUT_START_ALIGN } from "@/utils/layoutDirection";
@@ -10,8 +11,6 @@ import { useTranslation } from "react-i18next";
 import {
   Pressable,
   StyleSheet,
-  Text,
-  TextInput,
   type TextInputInstance,
   View,
 } from "react-native";

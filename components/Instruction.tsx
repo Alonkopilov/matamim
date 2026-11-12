@@ -1,3 +1,4 @@
+import { MAX_FONT_SCALE, TextInput } from "@/components/ui/Text";
 import { type Instruction } from "@/types/recipe";
 import { contentRow, directionStyle } from "@/utils/textDirection";
 import { INPUT_START_ALIGN } from "@/utils/layoutDirection";
@@ -8,7 +9,6 @@ import { $Text } from "@legendapp/state/react-native";
 import {
   Pressable,
   StyleSheet,
-  TextInput,
   type TextInputInstance,
   View,
 } from "react-native";
@@ -44,6 +44,7 @@ export default function Instruction({
     <View style={[styles.stepContainer, contentRow(isContentRTL)]}>
       <View style={styles.stepNumber}>
         <$Text
+          maxFontSizeMultiplier={MAX_FONT_SCALE}
           style={styles.stepNumberText}
           numberOfLines={1}
           adjustsFontSizeToFit
@@ -76,6 +77,7 @@ export default function Instruction({
             </View>
           ) : (
             <$Text
+              maxFontSizeMultiplier={MAX_FONT_SCALE}
               style={[
                 styles.stepText,
                 // Fills the row, so short steps line up with long ones

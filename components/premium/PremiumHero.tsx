@@ -1,10 +1,11 @@
+import { Text } from "@/components/ui/Text";
 import { colors, fonts, radius, spacing } from "@/constants/theme";
 import { onScreenLeft } from "@/utils/layoutDirection";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { LinearGradient } from "expo-linear-gradient";
 import { type ReactNode, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { StyleSheet, Text, View } from "react-native";
+import { StyleSheet, View } from "react-native";
 import Animated, {
   Easing,
   useAnimatedStyle,

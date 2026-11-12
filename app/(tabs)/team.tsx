@@ -1,4 +1,5 @@
 import { useBottomTabBarHeight } from "expo-router/js-tabs";
+import { Text, TextInput } from "@/components/ui/Text";
 import { colors } from "@/constants/theme";
 import InviteModal from "@/components/team/InviteModal";
 import LocalOnlyNotice from "@/components/team/LocalOnlyNotice";
@@ -31,8 +32,6 @@ import {
   Pressable,
   ScrollView,
   StyleSheet,
-  Text,
-  TextInput,
   View,
 } from "react-native";
 

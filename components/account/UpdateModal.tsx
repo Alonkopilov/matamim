@@ -1,10 +1,11 @@
 import Button from "@/components/ui/Button";
 import Sheet, { type SheetHandle, sheetStyles } from "@/components/ui/Sheet";
+import { MAX_FONT_SCALE, Text } from "@/components/ui/Text";
 import { colors } from "@/constants/theme";
 import { BottomSheetTextInput } from "@gorhom/bottom-sheet";
 import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { StyleSheet, Text, View } from "react-native";
+import { StyleSheet, View } from "react-native";
 
 interface UpdateModalProps {
   visible: boolean;
@@ -52,6 +53,7 @@ export default function UpdateModal({
       <Text style={sheetStyles.title}>{title}</Text>
 
       <BottomSheetTextInput
+        maxFontSizeMultiplier={MAX_FONT_SCALE}
         style={[sheetStyles.input, error ? sheetStyles.inputError : null]}
         placeholder={placeholder}
         placeholderTextColor={colors.textDisabled}

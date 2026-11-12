@@ -1,3 +1,4 @@
+import { Text } from "@/components/ui/Text";
 import { colors, fonts, spacing } from "@/constants/theme";
 import { logger } from "@/utils/logger";
 import { teamActions } from "@/utils/teamManagement";
@@ -6,7 +7,7 @@ import React, { useEffect, useRef } from "react";
 import { Trans, useTranslation } from "react-i18next";
 import Button from "@/components/ui/Button";
 import Sheet, { type SheetHandle, sheetStyles } from "@/components/ui/Sheet";
-import { ActivityIndicator, Share, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Share, StyleSheet, View } from "react-native";
 
 interface UpdateModalProps {
   visible: boolean;

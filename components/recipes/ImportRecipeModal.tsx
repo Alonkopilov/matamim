@@ -1,3 +1,4 @@
+import { MAX_FONT_SCALE, Text } from "@/components/ui/Text";
 import { colors } from "@/constants/theme";
 import { showAlert } from "@/stores/alertStore";
 import { logger } from "@/utils/logger";
@@ -22,7 +23,7 @@ import PressableScale from "@/components/ui/PressableScale";
 import SegmentedControl from "@/components/ui/SegmentedControl";
 import Sheet, { type SheetHandle, sheetStyles } from "@/components/ui/Sheet";
 import { BottomSheetTextInput } from "@gorhom/bottom-sheet";
-import { ScrollView, StyleSheet, Text, View } from "react-native";
+import { ScrollView, StyleSheet, View } from "react-native";
 
 export type { ImportedFields };
 
@@ -221,6 +222,7 @@ export default function ImportRecipeModal({
         </ScrollView>
       ) : mode === "link" ? (
         <BottomSheetTextInput
+          maxFontSizeMultiplier={MAX_FONT_SCALE}
           style={[
             sheetStyles.input,
             styles.input,

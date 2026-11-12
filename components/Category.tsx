@@ -1,8 +1,9 @@
 import PressableScale from "@/components/ui/PressableScale";
+import { Text } from "@/components/ui/Text";
 import { colors, fonts, spacing } from "@/constants/theme";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { ComponentProps } from "react";
-import { StyleSheet, Text } from "react-native";
+import { StyleSheet } from "react-native";
 
 const CHIP_HEIGHT = 40;
 

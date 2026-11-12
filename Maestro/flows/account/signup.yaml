@@ -2,7 +2,8 @@
 # account.
 #
 # Checks:
-#   1. "Log in here" and "Sign up here" switch between the two forms
+#   1. The Account tab opens on sign up on a fresh install, and "Log in
+#      here" and "Sign up here" switch between the two forms
 #   2. The sign up form refuses empty and invalid values, one field at a
 #      time: full name (symbols, too short, too long), email, short
 #      password, passwords that don't match
@@ -50,14 +51,7 @@ tags:
     timeout: 20000
 - tapOn: "Account"
 
-# 1. The log in form, then sign up, then back to log in
-- assertVisible: "Log in"
-- assertVisible: "Forgot your password\\?"
-- assertNotVisible:
-    id: "account-fullName"
-- assertNotVisible:
-    id: "account-confirmPassword"
-- tapOn: "Sign up here"
+# 1. The sign up form, then log in, then back to sign up
 - assertVisible:
     id: "account-fullName"
 - assertVisible:
@@ -377,7 +371,7 @@ tags:
 - extendedWaitUntil:
     visible: "No previous purchase found"
     timeout: 15000
-- assertNotVisible: "Login required"
+- assertNotVisible: "Account required"
 - scrollUntilVisible:
     element: "Purchase"
 - tapOn: "Purchase"
@@ -386,7 +380,7 @@ tags:
     visible: "Test Store Purchase"
     timeout: 15000
 - assertVisible: "(?s).*Product: annual_subscription_1.*"
-- assertNotVisible: "Login required"
+- assertNotVisible: "Account required"
 - tapOn: "(?i)cancel"
 - extendedWaitUntil:
     notVisible: "Test Store Purchase"
@@ -396,7 +390,7 @@ tags:
     visible: "Purchase"
     timeout: 5000
 - assertNotVisible: "Purchase failed"
-- assertNotVisible: "Login required"
+- assertNotVisible: "Account required"
 
 # 8c. AI import opens, from the form and from the create menu, with the
 #     free imports a new account gets
@@ -406,7 +400,7 @@ tags:
 - tapOn:
     id: "ai-import"
 - assertVisible: "Import a recipe"
-- assertNotVisible: "Log in to try importing"
+- assertNotVisible: "Sign up to try importing"
 - assertVisible: "Paste a link here"
 - assertVisible: "Free imports left: 3"
 - back
@@ -416,7 +410,7 @@ tags:
     id: "tab-create"
 - tapOn: "Import from a link"
 - assertVisible: "Import a recipe"
-- assertNotVisible: "Log in to try importing"
+- assertNotVisible: "Sign up to try importing"
 - assertVisible: "Paste a link here"
 - assertVisible: "Free imports left: 3"
 - back
@@ -426,7 +420,7 @@ tags:
     id: "tab-create"
 - tapOn: "Import from a photo"
 - assertVisible: "Import a recipe"
-- assertNotVisible: "Log in to try importing"
+- assertNotVisible: "Sign up to try importing"
 - assertVisible: "Take a photo"
 - assertVisible: "From gallery"
 - assertVisible: "Free imports left: 3"
@@ -462,7 +456,7 @@ tags:
     id: "ai-import"
 - assertVisible: "Import a recipe"
 - assertVisible: "Free imports left: 3"
-- assertNotVisible: "Log in to try importing"
+- assertNotVisible: "Sign up to try importing"
 - back
 - assertNotVisible: "Import a recipe"
 

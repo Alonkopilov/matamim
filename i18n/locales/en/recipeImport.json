@@ -26,7 +26,7 @@
   },
   "freeImportsLeft": "Free imports left: {{count}}",
   "loginRequired": {
-    "title": "Log in to try importing",
+    "title": "Sign up to try importing",
     "message": "Create a free account and import your first 3 recipes from the web or a photo for free."
   },
   "usedUp": {

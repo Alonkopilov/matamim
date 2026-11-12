@@ -1,4 +1,5 @@
 import { useBottomTabBarHeight } from "expo-router/js-tabs";
+import { Text } from "@/components/ui/Text";
 import { colors } from "@/constants/theme";
 import ConnectedView from "@/components/account/ConnectedAccount";
 import FormInput from "@/components/account/FormInput";
@@ -10,7 +11,7 @@ import {
   resetPasswordSchema,
 } from "@/schemas/resetPasswordSchema";
 import { auth$ } from "@/stores/authStore";
-import { settings$ } from "@/stores/settingsStore";
+import { loggedOutAccountMode, settings$ } from "@/stores/settingsStore";
 import { showToast } from "@/stores/toastStore";
 import {
   Account,
@@ -30,14 +31,13 @@ import {
   Pressable,
   ScrollView,
   StyleSheet,
-  Text,
   View,
 } from "react-native";
 
 export default observer(function AccountScreen() {
   const tabBarHeight = useBottomTabBarHeight();
   const ui$ = useObservable({
-    mode: "login" as AccountMode,
+    mode: loggedOutAccountMode() as AccountMode,
     account: EMPTY_ACCOUNT() as Account,
     problemFields: PERFECT_ACCOUNT() as AccountValidity,
     problems: "",

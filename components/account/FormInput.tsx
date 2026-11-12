@@ -1,3 +1,4 @@
+import { MAX_FONT_SCALE } from "@/components/ui/Text";
 import { colors } from "@/constants/theme";
 import { INPUT_START_ALIGN } from "@/utils/layoutDirection";
 import Ionicons from "@expo/vector-icons/Ionicons";
@@ -42,6 +43,7 @@ export default function FormInput({
     >
       <Ionicons name={icon} size={24} style={styles.searchIcon} />
       <$TextInput
+        maxFontSizeMultiplier={MAX_FONT_SCALE}
         testID={testID}
         placeholder={placeholder}
         placeholderTextColor={"#727272"}

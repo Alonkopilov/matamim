@@ -39,7 +39,11 @@ tags:
     condition: ${output.deviceRecipeNames === "E2E Guest Soup" && output.deviceRecipeOwners === "guest"}
     label: "On the device, the recipe belongs to the guest"
 
+# No account was signed in on this device yet, so it opens on sign up
 - tapOn: "Account"
+- assertVisible:
+    id: "account-fullName"
+- tapOn: "Log in here"
 - assertVisible: "Forgot your password\\?"
 
 # 1. Empty: exactly these two problems

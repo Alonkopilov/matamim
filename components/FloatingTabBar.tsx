@@ -1,4 +1,5 @@
 import CreateMenu from "@/components/CreateMenu";
+import { Text } from "@/components/ui/Text";
 import { colors, fonts, spacing } from "@/constants/theme";
 import { BlurView } from "expo-blur";
 import * as Haptics from "expo-haptics";
@@ -8,13 +9,7 @@ import {
   type BottomTabBarProps,
 } from "expo-router/js-tabs";
 import { type RefObject, useContext, useState } from "react";
-import {
-  Pressable,
-  StyleSheet,
-  Text,
-  View,
-  type ViewInstance,
-} from "react-native";
+import { Pressable, StyleSheet, View, type ViewInstance } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const BAR_HEIGHT = 68;

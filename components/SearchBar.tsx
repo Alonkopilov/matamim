@@ -1,3 +1,4 @@
+import { MAX_FONT_SCALE } from "@/components/ui/Text";
 import { colors, fonts, spacing } from "@/constants/theme";
 import { INPUT_START_ALIGN } from "@/utils/layoutDirection";
 import Ionicons from "@expo/vector-icons/Ionicons";
@@ -26,6 +27,7 @@ export default function SearchBar({ query$ }: Props) {
         color={isFocused ? colors.accent : colors.textSecondary}
       />
       <$TextInput
+        maxFontSizeMultiplier={MAX_FONT_SCALE}
         testID="recipe-search"
         placeholderTextColor={colors.textDisabled}
         placeholder={t("recipes.searchPlaceholder")}

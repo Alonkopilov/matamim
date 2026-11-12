@@ -19,6 +19,9 @@ interface Settings {
   isSyncingToCloud: boolean;
   isCollaborativeTeam: boolean;
   language: LanguagePreference;
+  // An account was signed in on this device, so the Account tab opens on log
+  // in instead of sign up. Deleting the account clears it.
+  hasSignedIn: boolean;
 }
 
 export const settings$ = observable<Settings>({
@@ -26,6 +29,7 @@ export const settings$ = observable<Settings>({
   isSyncingToCloud: false,
   isCollaborativeTeam: false,
   language: "system",
+  hasSignedIn: false,
 });
 
 const metadata = syncObservable(settings$, {
@@ -53,6 +57,17 @@ when(() => metadata.isPersistLoaded.get()).then(async () => {
     applyLanguage(value);
   });
 });
+
+// Also marks accounts that were signed in before the flag existed
+when(() => metadata.isPersistLoaded.get()).then(() => {
+  observe(() => {
+    if (auth$.session.get()?.user) settings$.hasSignedIn.set(true);
+  });
+});
+
+// The form the Account tab opens on when no one is logged in
+export const loggedOutAccountMode = (): "login" | "register" =>
+  settings$.hasSignedIn.peek() ? "login" : "register";
 
 // Cloud sync is a per-account preference, stored in the user's auth metadata.
 // The local value only mirrors whichever user is currently logged in.
