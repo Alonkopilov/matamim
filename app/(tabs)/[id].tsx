@@ -7,12 +7,13 @@ import ImportRecipeModal, {
   ImportedFields,
 } from "@/components/recipes/ImportRecipeModal";
 import CookMode from "@/components/recipes/CookMode";
+import RecipeImage from "@/components/recipes/RecipeImage";
 import LocalOnlyNotice from "@/components/team/LocalOnlyNotice";
 import Button from "@/components/ui/Button";
 import GlassButton from "@/components/ui/GlassButton";
 import SegmentedControl from "@/components/ui/SegmentedControl";
 import { difficultyLabel, mealLabel } from "@/i18n/recipeLabels";
-import { getCurrentUserId, useAccessToken } from "@/stores/authStore";
+import { getCurrentUserId } from "@/stores/authStore";
 import { showAlert } from "@/stores/alertStore";
 import { premium$ } from "@/stores/premiumStore";
 import { displayName } from "@/stores/profileStore";
@@ -34,7 +35,7 @@ import {
   Recipe,
   SERVINGS_VALUES,
 } from "@/types/recipe";
-import { imageSource, removeRecipeImage } from "@/utils/imageStorage";
+import { removeRecipeImage } from "@/utils/imageStorage";
 import {
   INPUT_START_ALIGN,
   onScreenLeft,
@@ -58,7 +59,6 @@ import {
 } from "@legendapp/state/react";
 import { $Text } from "@legendapp/state/react-native";
 import { BlurTargetView, BlurView } from "expo-blur";
-import { Image } from "expo-image";
 import { activateKeepAwakeAsync, deactivateKeepAwake } from "expo-keep-awake";
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import { useBottomTabBarHeight } from "expo-router/js-tabs";
@@ -147,7 +147,6 @@ export default observer(function RecipeCard() {
   });
 
   const { t } = useTranslation();
-  const accessToken = useAccessToken();
   const ui$ = useObservable({
     // Copies, since the observable edits the object it's given in place
     recipe: structuredClone(EMPTY_RECIPE),
@@ -666,21 +665,22 @@ export default observer(function RecipeCard() {
               <View style={styles.uploadButtonContainer}>
                 <ActivityIndicator size="large" color={colors.textDisabled} />
               </View>
-            ) : ui$.recipe.image.get() ? (
-              <Image
+            ) : (
+              <RecipeImage
+                image={ui$.recipe.image.get()}
                 cachePolicy="memory-disk" // Keeps it ready in RAM
                 priority="high"
-                source={imageSource(ui$.recipe.image.get(), accessToken)}
                 style={styles.image}
+                fallback={
+                  <View style={styles.uploadButtonContainer}>
+                    <MaterialIcons
+                      name={ui$.isEditMode.get() ? "image-search" : "image"}
+                      size={32}
+                      color={colors.textDisabled}
+                    />
+                  </View>
+                }
               />
-            ) : (
-              <View style={styles.uploadButtonContainer}>
-                <MaterialIcons
-                  name={ui$.isEditMode.get() ? "image-search" : "image"}
-                  size={32}
-                  color={colors.textDisabled}
-                />
-              </View>
             )}
           </Pressable>
         </Animated.View>

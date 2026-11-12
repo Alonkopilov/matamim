@@ -1,16 +1,15 @@
+import RecipeImage from "@/components/recipes/RecipeImage";
 import PressableScale from "@/components/ui/PressableScale";
 import { Text } from "@/components/ui/Text";
 import { colors, fonts, radius, spacing } from "@/constants/theme";
 import { difficultyLabel } from "@/i18n/recipeLabels";
-import { getCurrentUserId, useAccessToken } from "@/stores/authStore";
+import { getCurrentUserId } from "@/stores/authStore";
 import { useIsInCloud } from "@/stores/recipeStore";
 import { Recipe } from "@/types/recipe";
-import { imageSource } from "@/utils/imageStorage";
 import { contentDirection } from "@/utils/textDirection";
 import FontAwesome6 from "@expo/vector-icons/FontAwesome6";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { FlashList, type FlashListRef } from "@shopify/flash-list";
-import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
 import { useBottomTabBarHeight } from "expo-router/js-tabs";
@@ -127,7 +126,6 @@ export default function RecipeList({
   topInset = 0,
 }: Props) {
   const currentUserId = getCurrentUserId();
-  const accessToken = useAccessToken();
   const { t } = useTranslation();
   const tabBarHeight = useBottomTabBarHeight();
   const isInCloud = useIsInCloud();
@@ -139,7 +137,7 @@ export default function RecipeList({
       masonry
       numColumns={2}
       data={recipes}
-      extraData={[showLocalBadge, accessToken, isInCloud]}
+      extraData={[showLocalBadge, isInCloud]}
       keyExtractor={(item: Recipe) => item.id}
       ListHeaderComponent={header}
       ref={listRef}
@@ -200,23 +198,21 @@ export default function RecipeList({
               onPress={() => router.navigate(`/${item.id}`)}
               style={styles.card}
             >
-              {item.image !== "" ? (
-                <Image
-                  source={imageSource(item.image, accessToken)}
-                  style={StyleSheet.absoluteFill}
-                  transition={200}
-                  cachePolicy="memory-disk"
-                  recyclingKey={item.image}
-                />
-              ) : (
-                <View style={styles.noImage}>
-                  <FontAwesome6
-                    name="drumstick-bite"
-                    size={32}
-                    color={colors.textMuted}
-                  />
-                </View>
-              )}
+              <RecipeImage
+                image={item.image}
+                style={StyleSheet.absoluteFill}
+                transition={200}
+                cachePolicy="memory-disk"
+                fallback={
+                  <View style={styles.noImage}>
+                    <FontAwesome6
+                      name="drumstick-bite"
+                      size={32}
+                      color={colors.textMuted}
+                    />
+                  </View>
+                }
+              />
 
               <LinearGradient
                 colors={["transparent", "rgba(0, 0, 0, 0.85)"]}
