@@ -42,6 +42,7 @@ import {
   onScreenRight,
 } from "@/utils/layoutDirection";
 import { logger } from "@/utils/logger";
+import { ensureItemIds, newItemId } from "@/utils/recipeItems";
 import { useRecipeEditor } from "@/utils/recipeEditor";
 import {
   contentDirection,
@@ -171,7 +172,7 @@ export default observer(function RecipeCard() {
 
     addIngredient() {
       const empty = {
-        id: Math.random().toString(36).substring(7),
+        id: newItemId(),
         sort_order: ui$.recipe.ingredients.length,
         amount: "",
         unit: "",
@@ -182,7 +183,7 @@ export default observer(function RecipeCard() {
 
     addStep() {
       const empty = {
-        id: Math.random().toString(36).substring(7),
+        id: newItemId(),
         sort_order: ui$.recipe.instructions.length,
         text: "",
       };
@@ -344,7 +345,7 @@ export default observer(function RecipeCard() {
       const foundRecipe = recipes.find((r) => r.id === id);
       ui$.isEditMode.set(false);
       if (foundRecipe) {
-        ui$.recipe.set(structuredClone(foundRecipe));
+        ui$.recipe.set(ensureItemIds(structuredClone(foundRecipe)));
       }
     }
     ui$.isLoading.set(false);
